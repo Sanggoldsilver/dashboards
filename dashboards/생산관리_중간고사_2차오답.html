@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>생산운영관리(OM) 전략 대시보드</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<!-- Chosen Palette: Warm Neutrals & Emerald Accent -->
+<!-- Application Structure Plan: 대시보드 형태의 탭 네비게이션 구조를 채택하여 생산성, 글로벌 전략, 제품 수명주기, 배치 전략, 인적 자원 등 방대한 OM 주제를 논리적으로 분리했습니다. 사용자는 선형적인 보고서를 읽는 대신, 원하는 모듈을 선택해 상호작용하며 핵심 개념과 데이터를 능동적으로 탐색할 수 있습니다. -->
+<!-- Visualization & Content Choices: 생산성 변수는 직관적인 비율 확인을 위해 Chart.js의 도넛 차트를 사용했습니다. 글로벌 전략은 2x2 매트릭스 형태의 HTML Grid를 통해 비용과 현지화 압력을 비교하도록 했습니다. 제품 수명주기는 시간 흐름에 따른 매출 변화를 보여주기 위해 선형 차트를 적용했습니다. 모든 시각화는 Canvas와 HTML/CSS로만 구현되었습니다. -->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+<style>
+body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background-color: #fafaf9;
+    color: #292524;
+}
+.chart-container {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    height: 350px;
+    max-height: 400px;
+}
+@media (max-width: 768px) {
+    .chart-container {
+        height: 250px;
+    }
+}
+.nav-btn {
+    transition: all 0.2s ease-in-out;
+}
+.nav-btn.active {
+    border-bottom-width: 4px;
+    border-color: #059669;
+    color: #059669;
+    font-weight: 700;
+}
+.section-content {
+    display: none;
+    animation: fadeIn 0.4s ease-in-out;
+}
+.section-content.active {
+    display: block;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.interactive-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+}
+.interactive-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-color: #059669;
+}
+.interactive-card.selected {
+    background-color: #ecfdf5;
+    border-color: #059669;
+}
+.matrix-cell {
+    transition: all 0.2s;
+    cursor: pointer;
+}
+.matrix-cell:hover, .matrix-cell.active-cell {
+    background-color: #d1fae5;
+    border-color: #059669;
+}
+</style>
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+
+<header class="bg-white shadow-sm sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row justify-between items-center py-4">
+            <div class="text-2xl font-bold text-stone-800 flex items-center gap-2 mb-4 md:mb-0">
+                <span class="text-3xl">⚙️</span> 생산운영관리 전략 대시보드
+            </div>
+            <nav class="flex overflow-x-auto w-full md:w-auto pb-1 md:pb-0 gap-2 sm:gap-6 hide-scrollbar">
+                <button onclick="switchTab('productivity')" id="tab-productivity" class="nav-btn active whitespace-nowrap py-2 px-1 text-sm font-medium text-stone-500 hover:text-stone-800 focus:outline-none">생산성 분석</button>
+                <button onclick="switchTab('global')" id="tab-global" class="nav-btn whitespace-nowrap py-2 px-1 text-sm font-medium text-stone-500 hover:text-stone-800 focus:outline-none">글로벌 전략</button>
+                <button onclick="switchTab('plc')" id="tab-plc" class="nav-btn whitespace-nowrap py-2 px-1 text-sm font-medium text-stone-500 hover:text-stone-800 focus:outline-none">제품 & 프로세스</button>
+                <button onclick="switchTab('layout')" id="tab-layout" class="nav-btn whitespace-nowrap py-2 px-1 text-sm font-medium text-stone-500 hover:text-stone-800 focus:outline-none">배치 전략</button>
+                <button onclick="switchTab('hr')" id="tab-hr" class="nav-btn whitespace-nowrap py-2 px-1 text-sm font-medium text-stone-500 hover:text-stone-800 focus:outline-none">인적 자원</button>
+            </nav>
+        </div>
+    </div>
+</header>
+
+<main class="flex-grow max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+
+    <section id="sec-productivity" class="section-content active">
+        <div class="bg-white rounded-2xl shadow-sm p-6 mb-8 border border-stone-100">
+            <h2 class="text-xl font-bold mb-3 text-stone-800 flex items-center gap-2"><span class="text-emerald-600">📊</span> 생산성의 이해와 측정</h2>
+            <p class="text-stone-600 leading-relaxed mb-4">
+                이 섹션에서는 생산운영관리의 가장 기본적인 성과 지표인 **생산성(Productivity)**의 개념을 다룹니다. 투입물을 산출물로 변환하는 과정에서 창출된 가치의 비율을 계산하며, 자본이나 단순 노동력보다 **관리(Management)**의 역량이 생산성 향상에 가장 큰 기여를 한다는 점을 인터랙티브 차트와 계산기를 통해 직접 확인하고 분석할 수 있습니다.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="bg-white rounded-2xl shadow-sm p-6 border border-stone-100">
+                <h3 class="text-lg font-bold mb-4 text-stone-800">생산성 향상의 3대 주요 변수</h3>
+                <div class="chart-container">
+                    <canvas id="productivityChart"></canvas>
+                </div>
+                <div class="mt-4 text-sm text-stone-500 text-center">
+                    지식의 활용과 자원의 조직화 능력을 의미하는 '관리' 요소가 생산성 향상에 약 52%로 가장 크게 기여합니다.
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm p-6 border border-stone-100 flex flex-col justify-between">
+                <div>
+                    <h3 class="text-lg font-bold mb-4 text-stone-800">단일 요소 생산성 계산기</h3>
+                    <p class="text-sm text-stone-600 mb-6">노동 생산성 = 총 산출량(Output) / 노동 투입량(Input)</p>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-stone-700 mb-1">총 생산량 (단위)</label>
+                            <input type="number" id="calc-output" value="600" class="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-stone-700 mb-1">투입 노동 시간 (시간)</label>
+                            <input type="number" id="calc-input" value="8" class="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors">
+                        </div>
+                        <button onclick="calculateProductivity()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition-colors mt-2">
+                            계산하기
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="mt-8 p-4 bg-stone-50 rounded-xl border border-stone-200">
+                    <div class="text-sm font-medium text-stone-500 mb-1">계산 결과 (시간당 생산량)</div>
+                    <div id="calc-result" class="text-3xl font-bold text-emerald-600">75.00</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="sec-global" class="section-content">
+        <div class="bg-white rounded-2xl shadow-sm p-6 mb-8 border border-stone-100">
+            <h2 class="text-xl font-bold mb-3 text-stone-800 flex items-center gap-2"><span class="text-emerald-600">🌍</span> 글로벌 운영 전략 매트릭스</h2>
+            <p class="text-stone-600 leading-relaxed mb-4">
+                이 섹션에서는 글로벌 시장 환경에서 기업이 취할 수 있는 4가지 운영 전략 모델을 탐색합니다. 아래 매트릭스는 **'비용 절감 압력'**과 **'현지 대응성 요구'**라는 두 가지 핵심 축을 기준으로 기업의 전략적 선택지를 구조화합니다. 각 사분면을 클릭하여 각 전략의 구체적인 특징, 목표, 그리고 실제 기업 사례를 파악해 보십시오.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-100 relative">
+                <div class="absolute -left-2 top-1/2 -translate-y-1/2 -rotate-90 text-sm font-bold text-stone-500 tracking-widest hidden sm:block">비용 절감 압력 (Cost)</div>
+                <div class="absolute bottom-1 left-1/2 -translate-x-1/2 text-sm font-bold text-stone-500 tracking-widest">현지 대응성 (Local Responsiveness)</div>
+                
+                <div class="grid grid-cols-2 grid-rows-2 gap-3 h-80 sm:ml-6 mb-6">
+                    <div onclick="selectGlobalStrategy('transnational')" id="mat-transnational" class="matrix-cell border-2 border-stone-200 rounded-xl p-4 flex flex-col justify-center items-center text-center bg-stone-50 relative">
+                        <span class="absolute top-2 left-2 text-xs font-bold text-emerald-600">High / High</span>
+                        <div class="text-lg font-bold text-stone-800">초국가 전략</div>
+                        <div class="text-xs text-stone-500 mt-1">Transnational</div>
+                    </div>
+                    
+                    <div onclick="selectGlobalStrategy('global')" id="mat-global" class="matrix-cell border-2 border-stone-200 rounded-xl p-4 flex flex-col justify-center items-center text-center bg-stone-50 relative">
+                        <span class="absolute top-2 left-2 text-xs font-bold text-emerald-600">High / Low</span>
+                        <div class="text-lg font-bold text-stone-800">글로벌 전략</div>
+                        <div class="text-xs text-stone-500 mt-1">Global</div>
+                    </div>
+                    
+                    <div onclick="selectGlobalStrategy('multidomestic')" id="mat-multidomestic" class="matrix-cell border-2 border-stone-200 rounded-xl p-4 flex flex-col justify-center items-center text-center bg-stone-50 relative">
+                        <span class="absolute bottom-2 left-2 text-xs font-bold text-emerald-600">Low / High</span>
+                        <div class="text-lg font-bold text-stone-800">다국가 전략</div>
+                        <div class="text-xs text-stone-500 mt-1">Multi-domestic</div>
+                    </div>
+                    
+                    <div onclick="selectGlobalStrategy('international')" id="mat-international" class="matrix-cell border-2 border-stone-200 rounded-xl p-4 flex flex-col justify-center items-center text-center bg-stone-50 active-cell relative">
+                        <span class="absolute bottom-2 left-2 text-xs font-bold text-emerald-600">Low / Low</span>
+                        <div class="text-lg font-bold text-stone-800">국제 전략</div>
+                        <div class="text-xs text-stone-500 mt-1">International</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-emerald-50 rounded-2xl p-8 border border-emerald-100 h-full">
+                <div id="global-detail-title" class="text-2xl font-bold text-emerald-800 mb-2">국제 전략 (International Strategy)</div>
+                <div class="inline-block px-3 py-1 bg-white rounded-full text-xs font-bold text-stone-600 border border-emerald-200 mb-6" id="global-detail-axes">비용 압력 낮음 / 현지 대응성 낮음</div>
+                
+                <h4 class="font-bold text-stone-800 mb-2 border-b border-emerald-200 pb-2">핵심 특징</h4>
+                <p id="global-detail-desc" class="text-stone-700 text-sm leading-relaxed mb-6">
+                    기존의 성공적인 국내 모델이나 제품을 현지 시장에 단순히 수출하거나 라이선싱하는 가장 기본적인 글로벌화 방식입니다. 별도의 커스터마이징이 적습니다.
+                </p>
+
+                <h4 class="font-bold text-stone-800 mb-2 border-b border-emerald-200 pb-2">실제 기업 사례</h4>
+                <p id="global-detail-examples" class="text-stone-700 text-sm leading-relaxed font-medium">
+                    Harley-Davidson, U.S. Steel
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section id="sec-plc" class="section-content">
+        <div class="bg-white rounded-2xl shadow-sm p-6 mb-8 border border-stone-100">
+            <h2 class="text-xl font-bold mb-3 text-stone-800 flex items-center gap-2"><span class="text-emerald-600">📈</span> 제품 수명 주기(PLC)와 운영의 역할</h2>
+            <p class="text-stone-600 leading-relaxed mb-4">
+                본 섹션은 제품 수명 주기(Product Life Cycle)의 단계별 매출 및 이익 변화 추이를 시각화합니다. 아래 선형 차트를 통해 도입기부터 쇠퇴기까지의 흐름을 파악하고, 차트 하단의 단계별 버튼을 클릭하여 각 주기마다 생산운영관리자가 어떤 요소(예: 연구개발, 용량 확보, 원가 절감)에 전략적 초점을 맞춰야 하는지 확인할 수 있습니다.
+            </p>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm p-6 border border-stone-100 mb-6">
+            <div class="chart-container">
+                <canvas id="plcChart"></canvas>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <button onclick="showPlcInfo('intro', this)" class="plc-btn bg-white border border-stone-200 hover:border-emerald-500 hover:bg-emerald-50 rounded-xl p-4 text-center transition-all cursor-pointer">
+                <div class="font-bold text-stone-800">도입기</div>
+                <div class="text-xs text-stone-500 mt-1">Introduction</div>
+            </button>
+            <button onclick="showPlcInfo('growth', this)" class="plc-btn bg-white border border-stone-200 hover:border-emerald-500 hover:bg-emerald-50 rounded-xl p-4 text-center transition-all cursor-pointer">
+                <div class="font-bold text-stone-800">성장기</div>
+                <div class="text-xs text-stone-500 mt-1">Growth</div>
+            </button>
+            <button onclick="showPlcInfo('maturity', this)" class="plc-btn bg-emerald-50 border-emerald-500 border rounded-xl p-4 text-center transition-all cursor-pointer">
+                <div class="font-bold text-stone-800">성숙기</div>
+                <div class="text-xs text-stone-500 mt-1">Maturity</div>
+            </button>
+            <button onclick="showPlcInfo('decline', this)" class="plc-btn bg-white border border-stone-200 hover:border-emerald-500 hover:bg-emerald-50 rounded-xl p-4 text-center transition-all cursor-pointer">
+                <div class="font-bold text-stone-800">쇠퇴기</div>
+                <div class="text-xs text-stone-500 mt-1">Decline</div>
+            </button>
+        </div>
+
+        <div id="plc-info-panel" class="mt-6 bg-stone-50 rounded-xl p-6 border border-stone-200">
+            <h3 class="text-lg font-bold text-emerald-700 mb-2" id="plc-info-title">성숙기 (Maturity)</h3>
+            <div class="text-sm text-stone-700 leading-relaxed" id="plc-info-desc">
+                경쟁이 매우 치열해지며 매출 성장이 둔화되는 시기입니다. 이 단계에서 생산운영관리의 핵심 과제는 <strong>'저원가(Low Cost) 전략'</strong>으로의 전환과 공정 효율성의 극대화입니다. 단위당 생산 원가(Unit Cost)와 불량률을 최소화하는 것이 시장 생존의 필수 조건이 됩니다.
+            </div>
+        </div>
+    </section>
+
+    <section id="sec-layout" class="section-content">
+        <div class="bg-white rounded-2xl shadow-sm p-6 mb-8 border border-stone-100">
+            <h2 class="text-xl font-bold mb-3 text-stone-800 flex items-center gap-2"><span class="text-emerald-600">🏢</span> 시설 배치(Layout)와 물류 전략</h2>
+            <p class="text-stone-600 leading-relaxed mb-4">
+                이 섹션에서는 공간, 설비, 인력의 활용도를 최적화하고 자원의 흐름을 개선하기 위한 다양한 배치 전략을 다룹니다. 제조업체의 생산 라인부터 서비스업의 고객 동선 설계, 물류 창고의 효율화까지 각각의 환경에 최적화된 배치 방식들을 클릭하여 그 목적과 특징, 그리고 장단점을 비교 분석해 보십시오.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="md:col-span-1 space-y-3">
+                <div onclick="selectLayout('retail', this)" class="layout-card interactive-card selected border border-stone-200 rounded-xl p-4 bg-white">
+                    <div class="font-bold text-stone-800">소매점 배치</div>
+                    <div class="text-xs text-stone-500 mt-1">Retail Layout</div>
+                </div>
+                <div onclick="selectLayout('crossdock', this)" class="layout-card interactive-card border border-stone-200 rounded-xl p-4 bg-white">
+                    <div class="font-bold text-stone-800">크로스 도킹</div>
+                    <div class="text-xs text-stone-500 mt-1">Cross-docking (Warehouse)</div>
+                </div>
+                <div onclick="selectLayout('fixed', this)" class="layout-card interactive-card border border-stone-200 rounded-xl p-4 bg-white">
+                    <div class="font-bold text-stone-800">고정 위치 배치</div>
+                    <div class="text-xs text-stone-500 mt-1">Fixed-position Layout</div>
+                </div>
+                <div onclick="selectLayout('workcell', this)" class="layout-card interactive-card border border-stone-200 rounded-xl p-4 bg-white">
+                    <div class="font-bold text-stone-800">작업 셀</div>
+                    <div class="text-xs text-stone-500 mt-1">Work Cell</div>
+                </div>
+                <div onclick="selectLayout('office', this)" class="layout-card interactive-card border border-stone-200 rounded-xl p-4 bg-white">
+                    <div class="font-bold text-stone-800">사무실 배치</div>
+                    <div class="text-xs text-stone-500 mt-1">Office Layout</div>
+                </div>
+            </div>
+
+            <div class="md:col-span-2 bg-white rounded-2xl p-8 border border-stone-200 shadow-sm flex flex-col justify-center">
+                <div id="layout-icon" class="text-5xl mb-4">🛒</div>
+                <h3 id="layout-title" class="text-2xl font-bold text-stone-800 mb-4">소매점 배치 (Retail Layout)</h3>
+                <div class="space-y-4 text-stone-700 text-sm leading-relaxed">
+                    <p id="layout-desc1">
+                        <strong>목적:</strong> 고객이 매장에 더 오래 머물고 더 많은 상품을 보게 하여 평당 수익성(수익/면적)과 노출도(Exposure)를 극대화하는 전략입니다.
+                    </p>
+                    <p id="layout-desc2" class="p-4 bg-stone-50 border-l-4 border-emerald-500 rounded-r-lg">
+                        <strong>핵심 전략:</strong> 우유나 빵 같은 필수 구매 품목을 매장 가장 안쪽이나 구석에 배치합니다. 고객이 필수품을 찾기 위해 매장 전체를 가로지르며 이동하도록 유도하여 다른 상품에 대한 충동 구매율을 높입니다.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="sec-hr" class="section-content">
+        <div class="bg-white rounded-2xl shadow-sm p-6 mb-8 border border-stone-100">
+            <h2 class="text-xl font-bold mb-3 text-stone-800 flex items-center gap-2"><span class="text-emerald-600">👥</span> 인적 자원 관리와 직무 설계</h2>
+            <p class="text-stone-600 leading-relaxed mb-4">
+                기업 성과의 궁극적인 주체는 '사람'입니다. 이 섹션에서는 운영 효율성과 직원 근무 생활의 질(Quality of Work Life)을 동시에 충족시키기 위한 심리학적 기반의 직무 설계 방법을 학습합니다. 특히 단순 반복 작업의 지루함을 극복하기 위해 설계된 **수평적 확장(직무 확대)**과 **수직적 확장(직무 충실화)**의 차이점을 시각적 비교를 통해 명확히 이해할 수 있습니다.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+            <div class="bg-white border-2 border-stone-200 hover:border-emerald-500 rounded-2xl p-8 transition-colors">
+                <div class="flex justify-between items-center mb-6 border-b border-stone-100 pb-4">
+                    <h3 class="text-xl font-bold text-stone-800">직무 확대<br><span class="text-sm font-normal text-stone-500">Job Enlargement</span></h3>
+                    <div class="text-3xl">↔️</div>
+                </div>
+                <div class="mb-6 flex gap-2 justify-center">
+                    <div class="bg-stone-100 text-stone-700 px-3 py-2 rounded font-medium text-sm">작업 A</div>
+                    <div class="text-stone-400 self-center">+</div>
+                    <div class="bg-emerald-100 text-emerald-800 px-3 py-2 rounded font-medium text-sm">작업 B</div>
+                    <div class="text-stone-400 self-center">+</div>
+                    <div class="bg-stone-100 text-stone-700 px-3 py-2 rounded font-medium text-sm">작업 C</div>
+                </div>
+                <ul class="space-y-3 text-sm text-stone-600 list-disc list-inside">
+                    <li><strong class="text-stone-800">수평적(Horizontal)</strong> 범위의 확장</li>
+                    <li>수행해야 할 <strong>과업의 갯수나 종류의 양(Quantity)</strong>을 늘리는 방식</li>
+                    <li>장점: 단순 반복으로 인한 지루함 감소</li>
+                    <li>한계: 본질적인 동기부여나 책임감 상승에는 한계가 있음</li>
+                </ul>
+            </div>
+
+            <div class="bg-white border-2 border-stone-200 hover:border-emerald-500 rounded-2xl p-8 transition-colors shadow-[0_0_15px_rgba(5,150,105,0.1)]">
+                <div class="flex justify-between items-center mb-6 border-b border-stone-100 pb-4">
+                    <h3 class="text-xl font-bold text-emerald-700">직무 충실화<br><span class="text-sm font-normal text-stone-500">Job Enrichment</span></h3>
+                    <div class="text-3xl text-emerald-600">↕️</div>
+                </div>
+                <div class="mb-6 flex flex-col gap-2 w-1/2 mx-auto">
+                    <div class="bg-emerald-50 text-emerald-800 px-3 py-2 rounded font-bold text-sm text-center border border-emerald-200">계획 및 통제 권한</div>
+                    <div class="bg-emerald-600 text-white px-3 py-2 rounded font-medium text-sm text-center shadow-sm">기존 작업 A</div>
+                </div>
+                <ul class="space-y-3 text-sm text-stone-600 list-disc list-inside">
+                    <li><strong class="text-stone-800">수직적(Vertical)</strong> 범위의 확장</li>
+                    <li>직무의 <strong>질(Quality)과 깊이</strong>를 높이는 방식 (허즈버그 동기 요인)</li>
+                    <li>직원에게 의사결정 권한, 계획, 자율성을 추가 부여</li>
+                    <li>장점: 직무 유의성(Significance) 증가 및 강력한 내재적 동기 부여</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<script>
+    let prodChartInstance = null;
+    let plcChartInstance = null;
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.section-content').forEach(sec => sec.classList.remove('active'));
+        
+        document.getElementById('tab-' + tabId).classList.add('active');
+        document.getElementById('sec-' + tabId).classList.add('active');
+
+        if(tabId === 'productivity' && !prodChartInstance) {
+            initProductivityChart();
+        } else if (tabId === 'plc' && !plcChartInstance) {
+            initPlcChart();
+        }
+    }
+
+    function initProductivityChart() {
+        const ctx = document.getElementById('productivityChart').getContext('2d');
+        prodChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['관리 역량 (Management)', '자본 투자 (Capital)', '단순 노동 (Labor)'],
+                datasets: [{
+                    data: [52, 38, 10],
+                    backgroundColor: ['#059669', '#34d399', '#a7f3d0'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { font: { family: "'Noto Sans KR', sans-serif" } } },
+                    tooltip: {
+                        callbacks: { label: function(context) { return ' ' + context.label + ': ' + context.raw + '%'; } }
+                    }
+                },
+                cutout: '65%'
+            }
+        });
+    }
+
+    function calculateProductivity() {
+        const output = parseFloat(document.getElementById('calc-output').value);
+        const input = parseFloat(document.getElementById('calc-input').value);
+        const resEl = document.getElementById('calc-result');
+        
+        if(isNaN(output) || isNaN(input) || input === 0) {
+            resEl.innerText = "입력 오류";
+            resEl.classList.add('text-red-500');
+            resEl.classList.remove('text-emerald-600');
+        } else {
+            resEl.innerText = (output / input).toFixed(2);
+            resEl.classList.remove('text-red-500');
+            resEl.classList.add('text-emerald-600');
+        }
+    }
+
+    const globalData = {
+        'international': {
+            title: '국제 전략 (International Strategy)',
+            axes: '비용 압력 낮음 / 현지 대응성 낮음',
+            desc: '기존의 성공적인 국내 모델이나 제품을 현지 시장에 단순히 수출하거나 라이선싱하는 가장 기본적인 글로벌화 방식입니다. 본사의 통제가 강하며 별도의 현지화 커스터마이징이 매우 적습니다.',
+            ex: 'Harley-Davidson, U.S. Steel'
+        },
+        'multidomestic': {
+            title: '다국가 전략 (Multi-domestic Strategy)',
+            axes: '비용 압력 낮음 / 현지 대응성 높음',
+            desc: '현지 시장의 요구에 맞게 제품과 서비스를 철저히 맞춤화하는 전략입니다. 각 지역 자회사가 독립적인 의사결정 권한을 가지며 현지 고객의 입맛과 문화에 최적화된 마케팅을 전개합니다.',
+            ex: 'McDonald\'s (불고기버거 등 현지화 메뉴), Heinz'
+        },
+        'global': {
+            title: '글로벌 전략 (Global Strategy)',
+            axes: '비용 압력 높음 / 현지 대응성 낮음',
+            desc: '비용 절감이 지상 과제일 때 선택합니다. 전 세계적으로 동일한 표준화된 제품을 대량 생산하여 규모의 경제(Economies of scale)를 달성하고, 특정 지역에 거점 공장을 두어 효율을 극대화합니다.',
+            ex: 'Texas Instruments, Caterpillar, Otis Elevator'
+        },
+        'transnational': {
+            title: '초국가 전략 (Transnational Strategy)',
+            axes: '비용 압력 높음 / 현지 대응성 높음',
+            desc: '가장 고도화되고 복잡한 형태입니다. 글로벌 규모의 경제를 통한 비용 절감을 추구하면서도 동시에 국경 없는 자원 이동과 현지 맞춤화를 달성하려 합니다. 전 세계 지사들이 거대한 글로벌 학습 네트워크를 형성합니다.',
+            ex: 'Coca-Cola, Nestlé'
+        }
+    };
+
+    function selectGlobalStrategy(strategy) {
+        document.querySelectorAll('.matrix-cell').forEach(el => el.classList.remove('active-cell'));
+        document.getElementById('mat-' + strategy).classList.add('active-cell');
+        
+        document.getElementById('global-detail-title').innerText = globalData[strategy].title;
+        document.getElementById('global-detail-axes').innerText = globalData[strategy].axes;
+        document.getElementById('global-detail-desc').innerText = globalData[strategy].desc;
+        document.getElementById('global-detail-examples').innerText = globalData[strategy].ex;
+    }
+
+    function initPlcChart() {
+        const ctx = document.getElementById('plcChart').getContext('2d');
+        plcChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['도입기', '', '성장기', '', '성숙기', '', '쇠퇴기'],
+                datasets: [{
+                    label: '제품 판매량 (Sales)',
+                    data: [5, 15, 45, 80, 95, 85, 30],
+                    borderColor: '#059669',
+                    backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#059669',
+                    pointRadius: [4, 0, 4, 0, 4, 0, 4]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                },
+                scales: {
+                    y: { beginAtZero: true, display: false },
+                    x: { grid: { display: false }, ticks: { font: { family: "'Noto Sans KR', sans-serif" } } }
+                }
+            }
+        });
+    }
+
+    const plcData = {
+        'intro': {
+            title: '도입기 (Introduction)',
+            desc: '제품이 시장에 처음 등장하는 시기로 잦은 설계 변경과 연구개발 비용 지출이 큽니다. 프로세스 측면에서는 다품종 소량 생산에 적합한 <strong>프로세스 집중(Process Focus)</strong>이나 고도의 숙련된 인력이 필요한 고품질 공정 확보가 중요합니다.'
+        },
+        'growth': {
+            title: '성장기 (Growth)',
+            desc: '제품 디자인이 안정화되고 수요가 폭발적으로 급증하는 시기입니다. 이 단계에서 생산운영관리의 가장 핵심적인 과제는 정확한 수요 예측과 증가하는 물량을 감당하기 위한 <strong>용량(Capacity) 확장</strong> 및 효율적인 유통망의 구축입니다.'
+        },
+        'maturity': {
+            title: '성숙기 (Maturity)',
+            desc: '경쟁이 매우 치열해지며 매출 성장이 둔화되는 시기입니다. 이 단계에서 생산운영관리의 핵심 과제는 <strong>\'저원가(Low Cost) 전략\'</strong>으로의 전환과 공정 효율성의 극대화입니다. 단위당 생산 원가(Unit Cost)와 불량률을 최소화하는 것이 시장 생존의 필수 조건이 됩니다.'
+        },
+        'decline': {
+            title: '쇠퇴기 (Decline)',
+            desc: '수요가 급감하며 수익성이 낮아지는 시기입니다. 비용 절감을 넘어 제품 라인을 과감히 정리하고 단종 계획을 수립해야 하며, 잉여 생산 자원을 차세대 신제품 개발로 이동시켜야 하는 운영적 결단이 필요합니다.'
+        }
+    };
+
+    function showPlcInfo(stage, btnElement) {
+        document.querySelectorAll('.plc-btn').forEach(btn => {
+            btn.classList.remove('bg-emerald-50', 'border-emerald-500');
+            btn.classList.add('bg-white', 'border-stone-200');
+        });
+        btnElement.classList.remove('bg-white', 'border-stone-200');
+        btnElement.classList.add('bg-emerald-50', 'border-emerald-500');
+
+        document.getElementById('plc-info-title').innerHTML = plcData[stage].title;
+        document.getElementById('plc-info-desc').innerHTML = plcData[stage].desc;
+    }
+
+    const layoutData = {
+        'retail': {
+            icon: '🛒',
+            title: '소매점 배치 (Retail Layout)',
+            desc1: '<strong>목적:</strong> 고객이 매장에 더 오래 머물고 더 많은 상품을 보게 하여 평당 수익성(수익/면적)과 노출도(Exposure)를 극대화하는 전략입니다.',
+            desc2: '<strong>핵심 전략:</strong> 우유나 빵 같은 필수 구매 품목을 매장 가장 안쪽이나 구석에 배치합니다. 고객이 필수품을 찾기 위해 매장 전체를 가로지르며 이동하도록 유도하여 다른 상품에 대한 충동 구매율을 높입니다.'
+        },
+        'crossdock': {
+            icon: '🚚',
+            title: '크로스 도킹 (Cross-docking)',
+            desc1: '<strong>목적:</strong> 창고 내에 물건을 보관(저장)하는 시간을 최소화하여 재고 유지 비용을 획기적으로 줄이는 현대적 물류 배치 기법입니다.',
+            desc2: '<strong>핵심 전략:</strong> 공급처에서 들어온 화물을 입고 도크(Dock)에서 내리자마자, 보관 구역을 거치지 않고 창고를 가로질러(Cross) 곧바로 출고 도크의 트럭으로 옮겨 싣는 방식으로 정보 시스템의 완벽한 조율이 필수적입니다.'
+        },
+        'fixed': {
+            icon: '🏗️',
+            title: '고정 위치 배치 (Fixed-position)',
+            desc1: '<strong>목적:</strong> 제품의 크기나 무게가 너무 커서 이동시킬 수 없는 특수한 프로젝트성 생산 환경에 대응하기 위함입니다.',
+            desc2: '<strong>핵심 전략:</strong> 선박 건조, 대형 여객기 조립, 건축 현장처럼 \'제품\'은 한 곳에 고정되어 있고, 작업자와 장비, 원자재가 제품이 있는 위치로 직접 이동하여 작업하는 형태입니다.'
+        },
+        'workcell': {
+            icon: '⚙️',
+            title: '작업 셀 배치 (Work Cell)',
+            desc1: '<strong>목적:</strong> 대량 생산의 효율성과 다품종 소량 생산의 유연성을 동시에 확보하기 위해 고안된 하이브리드 배치 형태입니다.',
+            desc2: '<strong>핵심 전략:</strong> 특정 \'제품군(유사한 특성을 가진 제품들)\'의 생산을 전담하도록 기계 설비와 다숙련 작업자들을 U자형 등의 셀 형태로 그룹화합니다. 재공품(WIP) 재고와 이동 거리를 급격히 감소시킵니다.'
+        },
+        'office': {
+            icon: '💻',
+            title: '사무실 배치 (Office Layout)',
+            desc1: '<strong>목적:</strong> 직원 간의 협업 효율, 편안함, 그리고 안전을 제공하는 업무 환경을 조성하는 것입니다.',
+            desc2: '<strong>핵심 전략:</strong> 제조업의 자재 흐름과 달리, 사무실 배치의 가장 핵심적인 고려 사항은 직원 간의 원활한 <strong>\'정보의 흐름(Movement of information)\'</strong>입니다. 소통 빈도에 따라 부서와 개인의 위치를 최적화합니다.'
+        }
+    };
+
+    function selectLayout(type, btnElement) {
+        document.querySelectorAll('.layout-card').forEach(btn => btn.classList.remove('selected'));
+        btnElement.classList.add('selected');
+
+        document.getElementById('layout-icon').innerText = layoutData[type].icon;
+        document.getElementById('layout-title').innerText = layoutData[type].title;
+        document.getElementById('layout-desc1').innerHTML = layoutData[type].desc1;
+        document.getElementById('layout-desc2').innerHTML = layoutData[type].desc2;
+    }
+
+    window.onload = function() {
+        initProductivityChart();
+    };
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>생산운영관리(OM) 전략 대시보드</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<!-- Chosen Palette: Warm Neutrals & Emerald Accent -->
+<!-- Application Structure Plan: 대시보드 형태의 탭 네비게이션 구조를 채택하여 생산성, 글로벌 전략, 제품 수명주기, 배치 전략, 인적 자원 등 방대한 OM 주제를 논리적으로 분리했습니다. 사용자는 선형적인 보고서를 읽는 대신, 원하는 모듈을 선택해 상호작용하며 핵심 개념과 데이터를 능동적으로 탐색할 수 있습니다. -->
+<!-- Visualization & Content Choices: 생산성 변수는 직관적인 비율 확인을 위해 Chart.js의 도넛 차트를 사용했습니다. 글로벌 전략은 2x2 매트릭스 형태의 HTML Grid를 통해 비용과 현지화 압력을 비교하도록 했습니다. 제품 수명주기는 시간 흐름에 따른 매출 변화를 보여주기 위해 선형 차트를 적용했습니다. 모든 시각화는 Canvas와 HTML/CSS로만 구현되었습니다. -->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+<style>
+body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background-color: #fafaf9;
+    color: #292524;
+}
+.chart-container {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    height: 350px;
+    max-height: 400px;
+}
+@media (max-width: 768px) {
+    .chart-container {
+        height: 250px;
+    }
+}
+.nav-btn {
+    transition: all 0.2s ease-in-out;
+}
+.nav-btn.active {
+    border-bottom-width: 4px;
+    border-color: #059669;
+    color: #059669;
+    font-weight: 700;
+}
+.section-content {
+    display: none;
+    animation: fadeIn 0.4s ease-in-out;
+}
+.section-content.active {
+    display: block;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.interactive-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+}
+.interactive-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-color: #059669;
+}
+.interactive-card.selected {
+    background-color: #ecfdf5;
+    border-color: #059669;
+}
+.matrix-cell {
+    transition: all 0.2s;
+    cursor: pointer;
+}
+.matrix-cell:hover, .matrix-cell.active-cell {
+    background-color: #d1fae5;
+    border-color: #059669;
+}
+</style>
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+
+<header class="bg-white shadow-sm sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row justify-between items-center py-4">
+            <div class="text-2xl font-bold text-stone-800 flex items-center gap-2 mb-4 md:mb-0">
+                <span class="text-3xl">⚙️</span> 생산운영관리 전략 대시보드
+            </div>
+            <nav class="flex overflow-x-auto w-full md:w-auto pb-1 md:pb-0 gap-2 sm:gap-6 hide-scrollbar">
+                <button onclick="switchTab('productivity')" id="tab-productivity" class="nav-btn active whitespace-nowrap py-2 px-1 text-sm font-medium text-stone-500 hover:text-stone-800 focus:outline-none">생산성 분석</button>
+                <button onclick="switchTab('global')" id="tab-global" class="nav-btn whitespace-nowrap py-2 px-1 text-sm font-medium text-stone-500 hover:text-stone-800 focus:outline-none">글로벌 전략</button>
+                <button onclick="switchTab('plc')" id="tab-plc" class="nav-btn whitespace-nowrap py-2 px-1 text-sm font-medium text-stone-500 hover:text-stone-800 focus:outline-none">제품 & 프로세스</button>
+                <button onclick="switchTab('layout')" id="tab-layout" class="nav-btn whitespace-nowrap py-2 px-1 text-sm font-medium text-stone-500 hover:text-stone-800 focus:outline-none">배치 전략</button>
+                <button onclick="switchTab('hr')" id="tab-hr" class="nav-btn whitespace-nowrap py-2 px-1 text-sm font-medium text-stone-500 hover:text-stone-800 focus:outline-none">인적 자원</button>
+            </nav>
+        </div>
+    </div>
+</header>
+
+<main class="flex-grow max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+
+    <section id="sec-productivity" class="section-content active">
+        <div class="bg-white rounded-2xl shadow-sm p-6 mb-8 border border-stone-100">
+            <h2 class="text-xl font-bold mb-3 text-stone-800 flex items-center gap-2"><span class="text-emerald-600">📊</span> 생산성의 이해와 측정</h2>
+            <p class="text-stone-600 leading-relaxed mb-4">
+                이 섹션에서는 생산운영관리의 가장 기본적인 성과 지표인 **생산성(Productivity)**의 개념을 다룹니다. 투입물을 산출물로 변환하는 과정에서 창출된 가치의 비율을 계산하며, 자본이나 단순 노동력보다 **관리(Management)**의 역량이 생산성 향상에 가장 큰 기여를 한다는 점을 인터랙티브 차트와 계산기를 통해 직접 확인하고 분석할 수 있습니다.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="bg-white rounded-2xl shadow-sm p-6 border border-stone-100">
+                <h3 class="text-lg font-bold mb-4 text-stone-800">생산성 향상의 3대 주요 변수</h3>
+                <div class="chart-container">
+                    <canvas id="productivityChart"></canvas>
+                </div>
+                <div class="mt-4 text-sm text-stone-500 text-center">
+                    지식의 활용과 자원의 조직화 능력을 의미하는 '관리' 요소가 생산성 향상에 약 52%로 가장 크게 기여합니다.
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm p-6 border border-stone-100 flex flex-col justify-between">
+                <div>
+                    <h3 class="text-lg font-bold mb-4 text-stone-800">단일 요소 생산성 계산기</h3>
+                    <p class="text-sm text-stone-600 mb-6">노동 생산성 = 총 산출량(Output) / 노동 투입량(Input)</p>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-stone-700 mb-1">총 생산량 (단위)</label>
+                            <input type="number" id="calc-output" value="600" class="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-stone-700 mb-1">투입 노동 시간 (시간)</label>
+                            <input type="number" id="calc-input" value="8" class="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors">
+                        </div>
+                        <button onclick="calculateProductivity()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition-colors mt-2">
+                            계산하기
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="mt-8 p-4 bg-stone-50 rounded-xl border border-stone-200">
+                    <div class="text-sm font-medium text-stone-500 mb-1">계산 결과 (시간당 생산량)</div>
+                    <div id="calc-result" class="text-3xl font-bold text-emerald-600">75.00</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="sec-global" class="section-content">
+        <div class="bg-white rounded-2xl shadow-sm p-6 mb-8 border border-stone-100">
+            <h2 class="text-xl font-bold mb-3 text-stone-800 flex items-center gap-2"><span class="text-emerald-600">🌍</span> 글로벌 운영 전략 매트릭스</h2>
+            <p class="text-stone-600 leading-relaxed mb-4">
+                이 섹션에서는 글로벌 시장 환경에서 기업이 취할 수 있는 4가지 운영 전략 모델을 탐색합니다. 아래 매트릭스는 **'비용 절감 압력'**과 **'현지 대응성 요구'**라는 두 가지 핵심 축을 기준으로 기업의 전략적 선택지를 구조화합니다. 각 사분면을 클릭하여 각 전략의 구체적인 특징, 목표, 그리고 실제 기업 사례를 파악해 보십시오.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-100 relative">
+                <div class="absolute -left-2 top-1/2 -translate-y-1/2 -rotate-90 text-sm font-bold text-stone-500 tracking-widest hidden sm:block">비용 절감 압력 (Cost)</div>
+                <div class="absolute bottom-1 left-1/2 -translate-x-1/2 text-sm font-bold text-stone-500 tracking-widest">현지 대응성 (Local Responsiveness)</div>
+                
+                <div class="grid grid-cols-2 grid-rows-2 gap-3 h-80 sm:ml-6 mb-6">
+                    <div onclick="selectGlobalStrategy('transnational')" id="mat-transnational" class="matrix-cell border-2 border-stone-200 rounded-xl p-4 flex flex-col justify-center items-center text-center bg-stone-50 relative">
+                        <span class="absolute top-2 left-2 text-xs font-bold text-emerald-600">High / High</span>
+                        <div class="text-lg font-bold text-stone-800">초국가 전략</div>
+                        <div class="text-xs text-stone-500 mt-1">Transnational</div>
+                    </div>
+                    
+                    <div onclick="selectGlobalStrategy('global')" id="mat-global" class="matrix-cell border-2 border-stone-200 rounded-xl p-4 flex flex-col justify-center items-center text-center bg-stone-50 relative">
+                        <span class="absolute top-2 left-2 text-xs font-bold text-emerald-600">High / Low</span>
+                        <div class="text-lg font-bold text-stone-800">글로벌 전략</div>
+                        <div class="text-xs text-stone-500 mt-1">Global</div>
+                    </div>
+                    
+                    <div onclick="selectGlobalStrategy('multidomestic')" id="mat-multidomestic" class="matrix-cell border-2 border-stone-200 rounded-xl p-4 flex flex-col justify-center items-center text-center bg-stone-50 relative">
+                        <span class="absolute bottom-2 left-2 text-xs font-bold text-emerald-600">Low / High</span>
+                        <div class="text-lg font-bold text-stone-800">다국가 전략</div>
+                        <div class="text-xs text-stone-500 mt-1">Multi-domestic</div>
+                    </div>
+                    
+                    <div onclick="selectGlobalStrategy('international')" id="mat-international" class="matrix-cell border-2 border-stone-200 rounded-xl p-4 flex flex-col justify-center items-center text-center bg-stone-50 active-cell relative">
+                        <span class="absolute bottom-2 left-2 text-xs font-bold text-emerald-600">Low / Low</span>
+                        <div class="text-lg font-bold text-stone-800">국제 전략</div>
+                        <div class="text-xs text-stone-500 mt-1">International</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-emerald-50 rounded-2xl p-8 border border-emerald-100 h-full">
+                <div id="global-detail-title" class="text-2xl font-bold text-emerald-800 mb-2">국제 전략 (International Strategy)</div>
+                <div class="inline-block px-3 py-1 bg-white rounded-full text-xs font-bold text-stone-600 border border-emerald-200 mb-6" id="global-detail-axes">비용 압력 낮음 / 현지 대응성 낮음</div>
+                
+                <h4 class="font-bold text-stone-800 mb-2 border-b border-emerald-200 pb-2">핵심 특징</h4>
+                <p id="global-detail-desc" class="text-stone-700 text-sm leading-relaxed mb-6">
+                    기존의 성공적인 국내 모델이나 제품을 현지 시장에 단순히 수출하거나 라이선싱하는 가장 기본적인 글로벌화 방식입니다. 별도의 커스터마이징이 적습니다.
+                </p>
+
+                <h4 class="font-bold text-stone-800 mb-2 border-b border-emerald-200 pb-2">실제 기업 사례</h4>
+                <p id="global-detail-examples" class="text-stone-700 text-sm leading-relaxed font-medium">
+                    Harley-Davidson, U.S. Steel
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section id="sec-plc" class="section-content">
+        <div class="bg-white rounded-2xl shadow-sm p-6 mb-8 border border-stone-100">
+            <h2 class="text-xl font-bold mb-3 text-stone-800 flex items-center gap-2"><span class="text-emerald-600">📈</span> 제품 수명 주기(PLC)와 운영의 역할</h2>
+            <p class="text-stone-600 leading-relaxed mb-4">
+                본 섹션은 제품 수명 주기(Product Life Cycle)의 단계별 매출 및 이익 변화 추이를 시각화합니다. 아래 선형 차트를 통해 도입기부터 쇠퇴기까지의 흐름을 파악하고, 차트 하단의 단계별 버튼을 클릭하여 각 주기마다 생산운영관리자가 어떤 요소(예: 연구개발, 용량 확보, 원가 절감)에 전략적 초점을 맞춰야 하는지 확인할 수 있습니다.
+            </p>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm p-6 border border-stone-100 mb-6">
+            <div class="chart-container">
+                <canvas id="plcChart"></canvas>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <button onclick="showPlcInfo('intro', this)" class="plc-btn bg-white border border-stone-200 hover:border-emerald-500 hover:bg-emerald-50 rounded-xl p-4 text-center transition-all cursor-pointer">
+                <div class="font-bold text-stone-800">도입기</div>
+                <div class="text-xs text-stone-500 mt-1">Introduction</div>
+            </button>
+            <button onclick="showPlcInfo('growth', this)" class="plc-btn bg-white border border-stone-200 hover:border-emerald-500 hover:bg-emerald-50 rounded-xl p-4 text-center transition-all cursor-pointer">
+                <div class="font-bold text-stone-800">성장기</div>
+                <div class="text-xs text-stone-500 mt-1">Growth</div>
+            </button>
+            <button onclick="showPlcInfo('maturity', this)" class="plc-btn bg-emerald-50 border-emerald-500 border rounded-xl p-4 text-center transition-all cursor-pointer">
+                <div class="font-bold text-stone-800">성숙기</div>
+                <div class="text-xs text-stone-500 mt-1">Maturity</div>
+            </button>
+            <button onclick="showPlcInfo('decline', this)" class="plc-btn bg-white border border-stone-200 hover:border-emerald-500 hover:bg-emerald-50 rounded-xl p-4 text-center transition-all cursor-pointer">
+                <div class="font-bold text-stone-800">쇠퇴기</div>
+                <div class="text-xs text-stone-500 mt-1">Decline</div>
+            </button>
+        </div>
+
+        <div id="plc-info-panel" class="mt-6 bg-stone-50 rounded-xl p-6 border border-stone-200">
+            <h3 class="text-lg font-bold text-emerald-700 mb-2" id="plc-info-title">성숙기 (Maturity)</h3>
+            <div class="text-sm text-stone-700 leading-relaxed" id="plc-info-desc">
+                경쟁이 매우 치열해지며 매출 성장이 둔화되는 시기입니다. 이 단계에서 생산운영관리의 핵심 과제는 <strong>'저원가(Low Cost) 전략'</strong>으로의 전환과 공정 효율성의 극대화입니다. 단위당 생산 원가(Unit Cost)와 불량률을 최소화하는 것이 시장 생존의 필수 조건이 됩니다.
+            </div>
+        </div>
+    </section>
+
+    <section id="sec-layout" class="section-content">
+        <div class="bg-white rounded-2xl shadow-sm p-6 mb-8 border border-stone-100">
+            <h2 class="text-xl font-bold mb-3 text-stone-800 flex items-center gap-2"><span class="text-emerald-600">🏢</span> 시설 배치(Layout)와 물류 전략</h2>
+            <p class="text-stone-600 leading-relaxed mb-4">
+                이 섹션에서는 공간, 설비, 인력의 활용도를 최적화하고 자원의 흐름을 개선하기 위한 다양한 배치 전략을 다룹니다. 제조업체의 생산 라인부터 서비스업의 고객 동선 설계, 물류 창고의 효율화까지 각각의 환경에 최적화된 배치 방식들을 클릭하여 그 목적과 특징, 그리고 장단점을 비교 분석해 보십시오.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="md:col-span-1 space-y-3">
+                <div onclick="selectLayout('retail', this)" class="layout-card interactive-card selected border border-stone-200 rounded-xl p-4 bg-white">
+                    <div class="font-bold text-stone-800">소매점 배치</div>
+                    <div class="text-xs text-stone-500 mt-1">Retail Layout</div>
+                </div>
+                <div onclick="selectLayout('crossdock', this)" class="layout-card interactive-card border border-stone-200 rounded-xl p-4 bg-white">
+                    <div class="font-bold text-stone-800">크로스 도킹</div>
+                    <div class="text-xs text-stone-500 mt-1">Cross-docking (Warehouse)</div>
+                </div>
+                <div onclick="selectLayout('fixed', this)" class="layout-card interactive-card border border-stone-200 rounded-xl p-4 bg-white">
+                    <div class="font-bold text-stone-800">고정 위치 배치</div>
+                    <div class="text-xs text-stone-500 mt-1">Fixed-position Layout</div>
+                </div>
+                <div onclick="selectLayout('workcell', this)" class="layout-card interactive-card border border-stone-200 rounded-xl p-4 bg-white">
+                    <div class="font-bold text-stone-800">작업 셀</div>
+                    <div class="text-xs text-stone-500 mt-1">Work Cell</div>
+                </div>
+                <div onclick="selectLayout('office', this)" class="layout-card interactive-card border border-stone-200 rounded-xl p-4 bg-white">
+                    <div class="font-bold text-stone-800">사무실 배치</div>
+                    <div class="text-xs text-stone-500 mt-1">Office Layout</div>
+                </div>
+            </div>
+
+            <div class="md:col-span-2 bg-white rounded-2xl p-8 border border-stone-200 shadow-sm flex flex-col justify-center">
+                <div id="layout-icon" class="text-5xl mb-4">🛒</div>
+                <h3 id="layout-title" class="text-2xl font-bold text-stone-800 mb-4">소매점 배치 (Retail Layout)</h3>
+                <div class="space-y-4 text-stone-700 text-sm leading-relaxed">
+                    <p id="layout-desc1">
+                        <strong>목적:</strong> 고객이 매장에 더 오래 머물고 더 많은 상품을 보게 하여 평당 수익성(수익/면적)과 노출도(Exposure)를 극대화하는 전략입니다.
+                    </p>
+                    <p id="layout-desc2" class="p-4 bg-stone-50 border-l-4 border-emerald-500 rounded-r-lg">
+                        <strong>핵심 전략:</strong> 우유나 빵 같은 필수 구매 품목을 매장 가장 안쪽이나 구석에 배치합니다. 고객이 필수품을 찾기 위해 매장 전체를 가로지르며 이동하도록 유도하여 다른 상품에 대한 충동 구매율을 높입니다.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="sec-hr" class="section-content">
+        <div class="bg-white rounded-2xl shadow-sm p-6 mb-8 border border-stone-100">
+            <h2 class="text-xl font-bold mb-3 text-stone-800 flex items-center gap-2"><span class="text-emerald-600">👥</span> 인적 자원 관리와 직무 설계</h2>
+            <p class="text-stone-600 leading-relaxed mb-4">
+                기업 성과의 궁극적인 주체는 '사람'입니다. 이 섹션에서는 운영 효율성과 직원 근무 생활의 질(Quality of Work Life)을 동시에 충족시키기 위한 심리학적 기반의 직무 설계 방법을 학습합니다. 특히 단순 반복 작업의 지루함을 극복하기 위해 설계된 **수평적 확장(직무 확대)**과 **수직적 확장(직무 충실화)**의 차이점을 시각적 비교를 통해 명확히 이해할 수 있습니다.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+            <div class="bg-white border-2 border-stone-200 hover:border-emerald-500 rounded-2xl p-8 transition-colors">
+                <div class="flex justify-between items-center mb-6 border-b border-stone-100 pb-4">
+                    <h3 class="text-xl font-bold text-stone-800">직무 확대<br><span class="text-sm font-normal text-stone-500">Job Enlargement</span></h3>
+                    <div class="text-3xl">↔️</div>
+                </div>
+                <div class="mb-6 flex gap-2 justify-center">
+                    <div class="bg-stone-100 text-stone-700 px-3 py-2 rounded font-medium text-sm">작업 A</div>
+                    <div class="text-stone-400 self-center">+</div>
+                    <div class="bg-emerald-100 text-emerald-800 px-3 py-2 rounded font-medium text-sm">작업 B</div>
+                    <div class="text-stone-400 self-center">+</div>
+                    <div class="bg-stone-100 text-stone-700 px-3 py-2 rounded font-medium text-sm">작업 C</div>
+                </div>
+                <ul class="space-y-3 text-sm text-stone-600 list-disc list-inside">
+                    <li><strong class="text-stone-800">수평적(Horizontal)</strong> 범위의 확장</li>
+                    <li>수행해야 할 <strong>과업의 갯수나 종류의 양(Quantity)</strong>을 늘리는 방식</li>
+                    <li>장점: 단순 반복으로 인한 지루함 감소</li>
+                    <li>한계: 본질적인 동기부여나 책임감 상승에는 한계가 있음</li>
+                </ul>
+            </div>
+
+            <div class="bg-white border-2 border-stone-200 hover:border-emerald-500 rounded-2xl p-8 transition-colors shadow-[0_0_15px_rgba(5,150,105,0.1)]">
+                <div class="flex justify-between items-center mb-6 border-b border-stone-100 pb-4">
+                    <h3 class="text-xl font-bold text-emerald-700">직무 충실화<br><span class="text-sm font-normal text-stone-500">Job Enrichment</span></h3>
+                    <div class="text-3xl text-emerald-600">↕️</div>
+                </div>
+                <div class="mb-6 flex flex-col gap-2 w-1/2 mx-auto">
+                    <div class="bg-emerald-50 text-emerald-800 px-3 py-2 rounded font-bold text-sm text-center border border-emerald-200">계획 및 통제 권한</div>
+                    <div class="bg-emerald-600 text-white px-3 py-2 rounded font-medium text-sm text-center shadow-sm">기존 작업 A</div>
+                </div>
+                <ul class="space-y-3 text-sm text-stone-600 list-disc list-inside">
+                    <li><strong class="text-stone-800">수직적(Vertical)</strong> 범위의 확장</li>
+                    <li>직무의 <strong>질(Quality)과 깊이</strong>를 높이는 방식 (허즈버그 동기 요인)</li>
+                    <li>직원에게 의사결정 권한, 계획, 자율성을 추가 부여</li>
+                    <li>장점: 직무 유의성(Significance) 증가 및 강력한 내재적 동기 부여</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<script>
+    let prodChartInstance = null;
+    let plcChartInstance = null;
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.section-content').forEach(sec => sec.classList.remove('active'));
+        
+        document.getElementById('tab-' + tabId).classList.add('active');
+        document.getElementById('sec-' + tabId).classList.add('active');
+
+        if(tabId === 'productivity' && !prodChartInstance) {
+            initProductivityChart();
+        } else if (tabId === 'plc' && !plcChartInstance) {
+            initPlcChart();
+        }
+    }
+
+    function initProductivityChart() {
+        const ctx = document.getElementById('productivityChart').getContext('2d');
+        prodChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['관리 역량 (Management)', '자본 투자 (Capital)', '단순 노동 (Labor)'],
+                datasets: [{
+                    data: [52, 38, 10],
+                    backgroundColor: ['#059669', '#34d399', '#a7f3d0'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { font: { family: "'Noto Sans KR', sans-serif" } } },
+                    tooltip: {
+                        callbacks: { label: function(context) { return ' ' + context.label + ': ' + context.raw + '%'; } }
+                    }
+                },
+                cutout: '65%'
+            }
+        });
+    }
+
+    function calculateProductivity() {
+        const output = parseFloat(document.getElementById('calc-output').value);
+        const input = parseFloat(document.getElementById('calc-input').value);
+        const resEl = document.getElementById('calc-result');
+        
+        if(isNaN(output) || isNaN(input) || input === 0) {
+            resEl.innerText = "입력 오류";
+            resEl.classList.add('text-red-500');
+            resEl.classList.remove('text-emerald-600');
+        } else {
+            resEl.innerText = (output / input).toFixed(2);
+            resEl.classList.remove('text-red-500');
+            resEl.classList.add('text-emerald-600');
+        }
+    }
+
+    const globalData = {
+        'international': {
+            title: '국제 전략 (International Strategy)',
+            axes: '비용 압력 낮음 / 현지 대응성 낮음',
+            desc: '기존의 성공적인 국내 모델이나 제품을 현지 시장에 단순히 수출하거나 라이선싱하는 가장 기본적인 글로벌화 방식입니다. 본사의 통제가 강하며 별도의 현지화 커스터마이징이 매우 적습니다.',
+            ex: 'Harley-Davidson, U.S. Steel'
+        },
+        'multidomestic': {
+            title: '다국가 전략 (Multi-domestic Strategy)',
+            axes: '비용 압력 낮음 / 현지 대응성 높음',
+            desc: '현지 시장의 요구에 맞게 제품과 서비스를 철저히 맞춤화하는 전략입니다. 각 지역 자회사가 독립적인 의사결정 권한을 가지며 현지 고객의 입맛과 문화에 최적화된 마케팅을 전개합니다.',
+            ex: 'McDonald\'s (불고기버거 등 현지화 메뉴), Heinz'
+        },
+        'global': {
+            title: '글로벌 전략 (Global Strategy)',
+            axes: '비용 압력 높음 / 현지 대응성 낮음',
+            desc: '비용 절감이 지상 과제일 때 선택합니다. 전 세계적으로 동일한 표준화된 제품을 대량 생산하여 규모의 경제(Economies of scale)를 달성하고, 특정 지역에 거점 공장을 두어 효율을 극대화합니다.',
+            ex: 'Texas Instruments, Caterpillar, Otis Elevator'
+        },
+        'transnational': {
+            title: '초국가 전략 (Transnational Strategy)',
+            axes: '비용 압력 높음 / 현지 대응성 높음',
+            desc: '가장 고도화되고 복잡한 형태입니다. 글로벌 규모의 경제를 통한 비용 절감을 추구하면서도 동시에 국경 없는 자원 이동과 현지 맞춤화를 달성하려 합니다. 전 세계 지사들이 거대한 글로벌 학습 네트워크를 형성합니다.',
+            ex: 'Coca-Cola, Nestlé'
+        }
+    };
+
+    function selectGlobalStrategy(strategy) {
+        document.querySelectorAll('.matrix-cell').forEach(el => el.classList.remove('active-cell'));
+        document.getElementById('mat-' + strategy).classList.add('active-cell');
+        
+        document.getElementById('global-detail-title').innerText = globalData[strategy].title;
+        document.getElementById('global-detail-axes').innerText = globalData[strategy].axes;
+        document.getElementById('global-detail-desc').innerText = globalData[strategy].desc;
+        document.getElementById('global-detail-examples').innerText = globalData[strategy].ex;
+    }
+
+    function initPlcChart() {
+        const ctx = document.getElementById('plcChart').getContext('2d');
+        plcChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['도입기', '', '성장기', '', '성숙기', '', '쇠퇴기'],
+                datasets: [{
+                    label: '제품 판매량 (Sales)',
+                    data: [5, 15, 45, 80, 95, 85, 30],
+                    borderColor: '#059669',
+                    backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#059669',
+                    pointRadius: [4, 0, 4, 0, 4, 0, 4]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                },
+                scales: {
+                    y: { beginAtZero: true, display: false },
+                    x: { grid: { display: false }, ticks: { font: { family: "'Noto Sans KR', sans-serif" } } }
+                }
+            }
+        });
+    }
+
+    const plcData = {
+        'intro': {
+            title: '도입기 (Introduction)',
+            desc: '제품이 시장에 처음 등장하는 시기로 잦은 설계 변경과 연구개발 비용 지출이 큽니다. 프로세스 측면에서는 다품종 소량 생산에 적합한 <strong>프로세스 집중(Process Focus)</strong>이나 고도의 숙련된 인력이 필요한 고품질 공정 확보가 중요합니다.'
+        },
+        'growth': {
+            title: '성장기 (Growth)',
+            desc: '제품 디자인이 안정화되고 수요가 폭발적으로 급증하는 시기입니다. 이 단계에서 생산운영관리의 가장 핵심적인 과제는 정확한 수요 예측과 증가하는 물량을 감당하기 위한 <strong>용량(Capacity) 확장</strong> 및 효율적인 유통망의 구축입니다.'
+        },
+        'maturity': {
+            title: '성숙기 (Maturity)',
+            desc: '경쟁이 매우 치열해지며 매출 성장이 둔화되는 시기입니다. 이 단계에서 생산운영관리의 핵심 과제는 <strong>\'저원가(Low Cost) 전략\'</strong>으로의 전환과 공정 효율성의 극대화입니다. 단위당 생산 원가(Unit Cost)와 불량률을 최소화하는 것이 시장 생존의 필수 조건이 됩니다.'
+        },
+        'decline': {
+            title: '쇠퇴기 (Decline)',
+            desc: '수요가 급감하며 수익성이 낮아지는 시기입니다. 비용 절감을 넘어 제품 라인을 과감히 정리하고 단종 계획을 수립해야 하며, 잉여 생산 자원을 차세대 신제품 개발로 이동시켜야 하는 운영적 결단이 필요합니다.'
+        }
+    };
+
+    function showPlcInfo(stage, btnElement) {
+        document.querySelectorAll('.plc-btn').forEach(btn => {
+            btn.classList.remove('bg-emerald-50', 'border-emerald-500');
+            btn.classList.add('bg-white', 'border-stone-200');
+        });
+        btnElement.classList.remove('bg-white', 'border-stone-200');
+        btnElement.classList.add('bg-emerald-50', 'border-emerald-500');
+
+        document.getElementById('plc-info-title').innerHTML = plcData[stage].title;
+        document.getElementById('plc-info-desc').innerHTML = plcData[stage].desc;
+    }
+
+    const layoutData = {
+        'retail': {
+            icon: '🛒',
+            title: '소매점 배치 (Retail Layout)',
+            desc1: '<strong>목적:</strong> 고객이 매장에 더 오래 머물고 더 많은 상품을 보게 하여 평당 수익성(수익/면적)과 노출도(Exposure)를 극대화하는 전략입니다.',
+            desc2: '<strong>핵심 전략:</strong> 우유나 빵 같은 필수 구매 품목을 매장 가장 안쪽이나 구석에 배치합니다. 고객이 필수품을 찾기 위해 매장 전체를 가로지르며 이동하도록 유도하여 다른 상품에 대한 충동 구매율을 높입니다.'
+        },
+        'crossdock': {
+            icon: '🚚',
+            title: '크로스 도킹 (Cross-docking)',
+            desc1: '<strong>목적:</strong> 창고 내에 물건을 보관(저장)하는 시간을 최소화하여 재고 유지 비용을 획기적으로 줄이는 현대적 물류 배치 기법입니다.',
+            desc2: '<strong>핵심 전략:</strong> 공급처에서 들어온 화물을 입고 도크(Dock)에서 내리자마자, 보관 구역을 거치지 않고 창고를 가로질러(Cross) 곧바로 출고 도크의 트럭으로 옮겨 싣는 방식으로 정보 시스템의 완벽한 조율이 필수적입니다.'
+        },
+        'fixed': {
+            icon: '🏗️',
+            title: '고정 위치 배치 (Fixed-position)',
+            desc1: '<strong>목적:</strong> 제품의 크기나 무게가 너무 커서 이동시킬 수 없는 특수한 프로젝트성 생산 환경에 대응하기 위함입니다.',
+            desc2: '<strong>핵심 전략:</strong> 선박 건조, 대형 여객기 조립, 건축 현장처럼 \'제품\'은 한 곳에 고정되어 있고, 작업자와 장비, 원자재가 제품이 있는 위치로 직접 이동하여 작업하는 형태입니다.'
+        },
+        'workcell': {
+            icon: '⚙️',
+            title: '작업 셀 배치 (Work Cell)',
+            desc1: '<strong>목적:</strong> 대량 생산의 효율성과 다품종 소량 생산의 유연성을 동시에 확보하기 위해 고안된 하이브리드 배치 형태입니다.',
+            desc2: '<strong>핵심 전략:</strong> 특정 \'제품군(유사한 특성을 가진 제품들)\'의 생산을 전담하도록 기계 설비와 다숙련 작업자들을 U자형 등의 셀 형태로 그룹화합니다. 재공품(WIP) 재고와 이동 거리를 급격히 감소시킵니다.'
+        },
+        'office': {
+            icon: '💻',
+            title: '사무실 배치 (Office Layout)',
+            desc1: '<strong>목적:</strong> 직원 간의 협업 효율, 편안함, 그리고 안전을 제공하는 업무 환경을 조성하는 것입니다.',
+            desc2: '<strong>핵심 전략:</strong> 제조업의 자재 흐름과 달리, 사무실 배치의 가장 핵심적인 고려 사항은 직원 간의 원활한 <strong>\'정보의 흐름(Movement of information)\'</strong>입니다. 소통 빈도에 따라 부서와 개인의 위치를 최적화합니다.'
+        }
+    };
+
+    function selectLayout(type, btnElement) {
+        document.querySelectorAll('.layout-card').forEach(btn => btn.classList.remove('selected'));
+        btnElement.classList.add('selected');
+
+        document.getElementById('layout-icon').innerText = layoutData[type].icon;
+        document.getElementById('layout-title').innerText = layoutData[type].title;
+        document.getElementById('layout-desc1').innerHTML = layoutData[type].desc1;
+        document.getElementById('layout-desc2').innerHTML = layoutData[type].desc2;
+    }
+
+    window.onload = function() {
+        initProductivityChart();
+    };
+</script>
+</body>
+</html>
