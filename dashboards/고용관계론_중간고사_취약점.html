@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>고용관계론 인터랙티브 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #fafaf9; 
+            color: #292524;
+            overflow-x: hidden;
+        }
+        
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        
+        @media (max-width: 640px) {
+            .chart-container {
+                height: 250px;
+            }
+        }
+        
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .interactive-card {
+            transition: all 0.3s ease;
+        }
+        
+        .interactive-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+<!-- Chosen Palette: Warm Neutrals & Navy (bg-stone-50, text-stone-800, accent-blue-800, accent-teal-600) -->
+<!-- Application Structure Plan: The SPA uses a tabbed dashboard layout to segment the dense academic content into four digestible themes: Theoretical Foundations, Union Functions, Global Models, and Korean Labor Issues. This non-linear structure allows users to jump directly to specific study areas, reducing cognitive overload compared to a linear document. Tab navigation and click-to-reveal interactions encourage active exploration. -->
+<!-- Visualization & Content Choices: 1. Theory -> Goal: Organize -> Method: CSS Grid Cards -> Justification: Cleary separates the 3 distinct perspectives. 2. Union Types -> Goal: Compare -> Method: Chart.js Radar Chart -> Justification: Best for multivariate comparison of union types. 3. Global Models -> Goal: Organize -> Method: Interactive Grid with Detail Panel -> Justification: Allows deep dive into specific countries without cluttering the screen. 4. Window Unification -> Goal: Process Flow -> Method: HTML/Tailwind step layout -> Justification: Clearly shows procedural steps. NO SVG/Mermaid used. -->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <nav class="bg-stone-900 text-stone-100 shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center h-auto md:h-16 py-4 md:py-0">
+                <div class="flex-shrink-0 font-bold text-xl mb-4 md:mb-0 tracking-tight">
+                    🤝 ER Dashboard
+                </div>
+                <div class="flex flex-wrap justify-center gap-2">
+                    <button class="nav-btn bg-stone-700 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-600 transition-colors" data-target="theory">1. 고용관계 이론</button>
+                    <button class="nav-btn bg-transparent text-stone-300 hover:text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-stone-800 transition-colors" data-target="unions">2. 노동조합 유형·기능</button>
+                    <button class="nav-btn bg-transparent text-stone-300 hover:text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-stone-800 transition-colors" data-target="global">3. 글로벌 노사관계</button>
+                    <button class="nav-btn bg-transparent text-stone-300 hover:text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-stone-800 transition-colors" data-target="korea">4. 한국의 쟁점</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <header class="bg-stone-200 py-12 border-b border-stone-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-4xl font-extrabold text-stone-900 sm:text-5xl">
+                고용관계론 (Employment Relations)
+            </h1>
+            <p class="mt-4 text-xl text-stone-700 max-w-3xl mx-auto">
+                상명대학교 고용관계론 강의의 핵심 개념, 각국 시스템, 그리고 최신 노동법 쟁점(노란봉투법 등)을 한눈에 탐색하고 종합할 수 있는 인터랙티브 학습 공간입니다.
+            </p>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+        <section id="theory" class="tab-content active">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-stone-800 border-b-2 border-blue-600 pb-2 inline-block">고용관계를 바라보는 3대 시각</h2>
+                <p class="mt-4 text-stone-600 text-lg">
+                    본 섹션은 노사관계를 이해하는 가장 근본적인 세 가지 이론적 관점을 제공합니다. 이데올로기적 배경에 따라 노동조합과 갈등을 해석하는 방식이 어떻게 다른지 카드를 클릭하여 비교해보세요. 이는 고용관계의 본질을 파악하는 초석이 됩니다.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="interactive-card bg-white rounded-xl shadow border border-stone-200 overflow-hidden cursor-pointer" onclick="toggleTheoryDetail('unit')">
+                    <div class="bg-blue-600 h-2 w-full"></div>
+                    <div class="p-6">
+                        <div class="text-4xl mb-4">🏢</div>
+                        <h3 class="text-xl font-bold text-stone-900">일원주의 (Unitarism)</h3>
+                        <p class="text-sm font-semibold text-blue-600 mt-1">프레드릭 테일러 (과학적 관리)</p>
+                        <p class="mt-3 text-stone-600">조직은 하나의 통합된 목표를 가진 팀입니다. 경영진의 올바른 리더십이 있다면 노사 간의 본질적 갈등은 존재하지 않는다고 봅니다.</p>
+                        <div id="detail-unit" class="hidden mt-4 pt-4 border-t border-stone-100 text-sm text-stone-700">
+                            <strong>노동조합에 대한 시각:</strong> 불필요한 존재. 노조는 경영진의 소통 실패나 부실 경영의 산물이며, 조직의 화합을 저해하는 외부 침입자로 간주합니다.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="interactive-card bg-white rounded-xl shadow border border-stone-200 overflow-hidden cursor-pointer" onclick="toggleTheoryDetail('plur')">
+                    <div class="bg-teal-600 h-2 w-full"></div>
+                    <div class="p-6">
+                        <div class="text-4xl mb-4">⚖️</div>
+                        <h3 class="text-xl font-bold text-stone-900">다원주의 (Pluralism)</h3>
+                        <p class="text-sm font-semibold text-teal-600 mt-1">존 던롭, 시드니 웹</p>
+                        <p class="mt-3 text-stone-600">사회에는 다양한 이익집단이 존재하며, 자본과 노동 간의 이해 상충은 자연스럽고 불가피한 현상으로 인정합니다.</p>
+                        <div id="detail-plur" class="hidden mt-4 pt-4 border-t border-stone-100 text-sm text-stone-700">
+                            <strong>노동조합에 대한 시각:</strong> 필수적이고 합법적인 파트너. 노동자의 이익을 대변하며 단체교섭을 통해 갈등을 제도적으로 해결하는 이해관계 조정의 장입니다.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="interactive-card bg-white rounded-xl shadow border border-stone-200 overflow-hidden cursor-pointer" onclick="toggleTheoryDetail('rad')">
+                    <div class="bg-red-600 h-2 w-full"></div>
+                    <div class="p-6">
+                        <div class="text-4xl mb-4">✊</div>
+                        <h3 class="text-xl font-bold text-stone-900">급진주의 (Radicalism)</h3>
+                        <p class="text-sm font-semibold text-red-600 mt-1">칼 마르크스</p>
+                        <p class="mt-3 text-stone-600">자본주의 체제 자체가 본질적으로 착취적이며, 노사관계는 근본적인 계급 갈등의 연장선에 있다고 주장합니다.</p>
+                        <div id="detail-rad" class="hidden mt-4 pt-4 border-t border-stone-100 text-sm text-stone-700">
+                            <strong>노동조합에 대한 시각:</strong> '공산주의의 학교'. 단순한 경제적 조건 개선을 넘어, 자본주의 체제를 전복하기 위한 노동자 계급의 전위 조직으로 평가합니다.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-12 bg-stone-100 p-6 rounded-lg border border-stone-200">
+                <h3 class="text-lg font-bold text-stone-800 mb-3">📌 시스템 이론 (John Dunlop, 1958)</h3>
+                <p class="text-stone-700">다원주의에 기반한 던롭은 노사관계를 상호의존적인 '시스템'으로 분석했습니다. 이 시스템은 3주체(노, 사, 정)가 환경적 제약(기술, 시장, 권력) 속에서 공유된 이데올로기를 바탕으로 <strong>'규칙(Rules)'</strong>을 만들어내는 과정입니다.</p>
+            </div>
+        </section>
+
+        <section id="unions" class="tab-content">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-stone-800 border-b-2 border-teal-600 pb-2 inline-block">노동조합의 유형과 핵심 기능</h2>
+                <p class="mt-4 text-stone-600 text-lg">
+                    이 섹션에서는 노동조합이 어떠한 형태로 조직되며, 조합원과 사회를 위해 어떤 기능을 수행하는지 분석합니다. 방사형 차트를 통해 조직 형태별 특성의 차이를 비교하고, 하단의 기능 탭을 눌러 각 기능의 세부 목적을 확인하세요.
+                </p>
+            </div>
+
+            <div class="flex flex-col lg:flex-row gap-8 items-stretch">
+                <div class="w-full lg:w-1/2 bg-white p-6 rounded-xl shadow border border-stone-200">
+                    <h3 class="text-xl font-bold text-stone-800 mb-4 text-center">노조 형태별 특성 비교</h3>
+                    <div class="chart-container">
+                        <canvas id="unionTypeChart"></canvas>
+                    </div>
+                    <p class="text-sm text-stone-500 text-center mt-4">* 본 차트는 각 조직 형태의 일반적인 이론적 특성을 상대적 척도로 비교한 것입니다.</p>
+                </div>
+
+                <div class="w-full lg:w-1/2 bg-white rounded-xl shadow border border-stone-200 overflow-hidden flex flex-col">
+                    <div class="flex border-b border-stone-200 bg-stone-50">
+                        <button class="flex-1 py-4 px-2 text-sm font-bold text-teal-700 border-b-2 border-teal-600 function-btn" data-func="eco">경제적 기능</button>
+                        <button class="flex-1 py-4 px-2 text-sm font-bold text-stone-500 hover:text-teal-600 function-btn" data-func="mut">공제적 기능</button>
+                        <button class="flex-1 py-4 px-2 text-sm font-bold text-stone-500 hover:text-teal-600 function-btn" data-func="dem">정치·민주화 기능</button>
+                    </div>
+                    <div class="p-8 flex-grow flex items-center justify-center bg-white" id="function-content">
+                        <div id="func-eco" class="text-center">
+                            <div class="text-5xl mb-4">💰</div>
+                            <h4 class="text-2xl font-bold text-stone-800 mb-2">경제적 기능 (1차적 기능)</h4>
+                            <p class="text-stone-600 text-lg">사용자와의 <strong>단체교섭</strong>을 통해 임금을 인상하고 근로시간을 단축하는 등 근로조건의 유지 및 개선을 도모합니다. 노동조합의 가장 본질적이고 기초적인 존재 이유입니다.</p>
+                        </div>
+                        <div id="func-mut" class="text-center hidden">
+                            <div class="text-5xl mb-4">🤝</div>
+                            <h4 class="text-2xl font-bold text-stone-800 mb-2">공제적 기능 (상호 부조)</h4>
+                            <p class="text-stone-600 text-lg">조합원의 질병, 사망, 실업, 파업 시 경제적 지원을 제공합니다. 웹 부부가 강조한 개념으로, 조합비(기금)를 통한 형제애와 연대감 형성을 목적으로 하는 오래된 기능입니다.</p>
+                        </div>
+                        <div id="func-dem" class="text-center hidden">
+                            <div class="text-5xl mb-4">🗳️</div>
+                            <h4 class="text-2xl font-bold text-stone-800 mb-2">정치 및 민주화 기능</h4>
+                            <p class="text-stone-600 text-lg">사회 전반의 법과 제도 개선을 위한 정치적 입법 활동(정치적 기능)과, 경영참가를 통해 기업 내 독단적 통제를 배제하고 산업민주주의를 실현하는 활동(민주화 기능)을 포괄합니다.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="global" class="tab-content">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-stone-800 border-b-2 border-indigo-600 pb-2 inline-block">각국의 노사관계 모델</h2>
+                <p class="mt-4 text-stone-600 text-lg">
+                    주요 국가들은 역사적, 문화적 배경에 따라 고유한 노사관계 시스템을 발전시켜 왔습니다. 아래 국가 카드를 클릭하여 국가별 노동법의 핵심 원칙과 제도를 탐색하고, 서로 어떻게 다른지 비교해 보십시오.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <button class="country-btn bg-indigo-50 border-2 border-indigo-600 text-indigo-800 rounded-lg p-4 font-bold text-lg hover:bg-indigo-100 transition shadow-sm" data-country="uk">🇬🇧 영국</button>
+                <button class="country-btn bg-white border border-stone-200 text-stone-600 rounded-lg p-4 font-bold text-lg hover:bg-stone-50 transition shadow-sm" data-country="ger">🇩🇪 독일</button>
+                <button class="country-btn bg-white border border-stone-200 text-stone-600 rounded-lg p-4 font-bold text-lg hover:bg-stone-50 transition shadow-sm" data-country="us">🇺🇸 미국</button>
+                <button class="country-btn bg-white border border-stone-200 text-stone-600 rounded-lg p-4 font-bold text-lg hover:bg-stone-50 transition shadow-sm" data-country="jp">🇯🇵 일본</button>
+            </div>
+
+            <div id="country-detail-panel" class="bg-white p-8 rounded-xl shadow-lg border border-indigo-100">
+                <div id="content-uk" class="country-content block">
+                    <h3 class="text-2xl font-bold text-indigo-900 mb-4">영국: 노사자율주의 (Voluntarism)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-stone-700 mb-4">영국은 국가의 개입을 최소화하고 노사 양 당사자의 자율적인 타협과 신의성실 원칙을 중시하는 전통을 가지고 있습니다. 명문화된 노동법전보다 자율적 교섭 관행이 우선시되었습니다.</p>
+                            <ul class="list-disc list-inside text-stone-600 space-y-2 font-medium">
+                                <li><strong>핵심 원칙:</strong> 법의 개입 최소화 (Laissez-faire)</li>
+                                <li><strong>조직 특징:</strong> 전통적으로 직종별 노조가 강세</li>
+                                <li><strong>단체협약:</strong> 신사협정(Gentleman's Agreement) 성격</li>
+                            </ul>
+                        </div>
+                        <div class="bg-indigo-50 p-4 rounded-lg flex items-center justify-center">
+                            <span class="text-xl font-bold text-indigo-800 text-center">"법보다 당사자 간의 자율적 합의와 관행이 우선한다."</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="content-ger" class="country-content hidden">
+                    <h3 class="text-2xl font-bold text-indigo-900 mb-4">독일: 공동결정제도 (Codetermination)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-stone-700 mb-4">독일은 법적 제도화를 통해 노동자가 기업 경영에 직접 참여하는 강력한 시스템을 구축했습니다. 산업별 노조의 강력한 교섭력과 기업 단위의 협력적 평의회가 공존하는 이중 구조입니다.</p>
+                            <ul class="list-disc list-inside text-stone-600 space-y-2 font-medium">
+                                <li><strong>핵심 기구 1:</strong> 종업원 평의회 (Works Council) - 사업장 내 인사/복지 공동결정</li>
+                                <li><strong>핵심 기구 2:</strong> 노사동수 감사회 - 기업 경영진 감독</li>
+                                <li><strong>조직 특징:</strong> 강력하고 산별화된 노동조합 (예: 금속노조 IG Metall)</li>
+                            </ul>
+                        </div>
+                        <div class="bg-indigo-50 p-4 rounded-lg flex items-center justify-center">
+                            <span class="text-xl font-bold text-indigo-800 text-center">"경영권은 자본만의 전유물이 아니며, 노동자는 의사결정의 파트너다."</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="content-us" class="country-content hidden">
+                    <h3 class="text-2xl font-bold text-indigo-900 mb-4">미국: 와그너법과 배타적 교섭권</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-stone-700 mb-4">1930년대 경제 대공황을 극복하기 위해 제정된 와그너법(NLRA)을 기초로 합니다. 법에 의해 철저하게 규율되며, 선거를 통해 승리한 노조가 모든 노동자를 독점적으로 대리합니다.</p>
+                            <ul class="list-disc list-inside text-stone-600 space-y-2 font-medium">
+                                <li><strong>배타적 교섭 대표제:</strong> 과반수 득표 노조가 유일한 교섭권 행사</li>
+                                <li><strong>부당노동행위 (ULP):</strong> 사용자의 노조 탄압을 법으로 강력히 금지</li>
+                                <li><strong>패턴 교섭:</strong> 선도 기업의 타결 결과를 타 기업에 확산</li>
+                            </ul>
+                        </div>
+                        <div class="bg-indigo-50 p-4 rounded-lg flex items-center justify-center">
+                            <span class="text-xl font-bold text-indigo-800 text-center">"규칙(법률)에 기반한 철저한 비즈니스적 협상과 투표 기반의 대표성"</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="content-jp" class="country-content hidden">
+                    <h3 class="text-2xl font-bold text-indigo-900 mb-4">일본: 3종의 신기와 기업별 노조</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-stone-700 mb-4">회사와 노동자의 운명이 하나라는 공동체 의식이 강합니다. 서구의 계급적, 직종별 접근과 달리 개별 기업 단위로 조직되어 사용자와 밀접하게 협력하는 구조입니다.</p>
+                            <ul class="list-disc list-inside text-stone-600 space-y-2 font-medium">
+                                <li><strong>일본 노사관계 3종 신기:</strong> 종신고용제, 연공서열형 임금, 기업별 노동조합</li>
+                                <li><strong>춘투 (春鬪):</strong> 매년 봄 전국적으로 일제히 임금교섭을 진행</li>
+                                <li><strong>특징:</strong> 높은 노사 협력성 및 장기 고용 안정성 중시</li>
+                            </ul>
+                        </div>
+                        <div class="bg-indigo-50 p-4 rounded-lg flex items-center justify-center">
+                            <span class="text-xl font-bold text-indigo-800 text-center">"우리는 한 배를 탔다 (가족주의적 노사 화합)"</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="korea" class="tab-content">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-stone-800 border-b-2 border-red-700 pb-2 inline-block">한국 노사관계 주요 쟁점</h2>
+                <p class="mt-4 text-stone-600 text-lg">
+                    한국의 노동 환경은 고도성장기와 1987년 민주화 과정을 거치며 독특한 법적·제도적 쟁점들을 낳았습니다. 가장 최근 뜨거운 화두인 '노란봉투법'과 복수노조 체제하의 '창구단일화 절차'를 직관적으로 이해해 보십시오.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                <div class="bg-white p-6 rounded-xl shadow border border-stone-200">
+                    <h3 class="text-xl font-bold text-red-800 mb-4 flex items-center">
+                        <span class="text-2xl mr-2">✉️</span> 노란봉투법 (노조법 2조 개정안)
+                    </h3>
+                    <p class="text-stone-700 mb-4 font-medium">하청 노동자 파업과 수백억 원의 손해배상 청구 사건에서 비롯된 법안으로, 노동권 보장의 범위를 확대하는 것이 핵심입니다.</p>
+                    
+                    <div class="space-y-4">
+                        <div class="border-l-4 border-red-500 pl-4 py-1">
+                            <h4 class="font-bold text-stone-900">핵심 쟁점 1: '사용자' 개념의 확대</h4>
+                            <p class="text-sm text-stone-600 mt-1">기존에는 '근로계약 체결 당사자'만 사용자였으나, 개정안은 하청 노동자의 근로조건에 <strong>"실질적·구체적인 지배력"</strong>을 행사하는 원청도 사용자로 규정하여 교섭 의무를 부여합니다.</p>
+                        </div>
+                        <div class="border-l-4 border-orange-500 pl-4 py-1">
+                            <h4 class="font-bold text-stone-900">핵심 쟁점 2: '노동쟁의' 범위 확대</h4>
+                            <p class="text-sm text-stone-600 mt-1">임금 인상 등 '이익 분쟁'에 국한되던 파업의 대상을, 체불임금 청산이나 부당해고 철회 같은 '권리 분쟁'까지 확대하려는 내용입니다.</p>
+                        </div>
+                        <div class="border-l-4 border-yellow-500 pl-4 py-1">
+                            <h4 class="font-bold text-stone-900">핵심 쟁점 3: 손해배상 책임의 제한</h4>
+                            <p class="text-sm text-stone-600 mt-1">합법적 파업의 범위를 넓히고, 쟁의행위로 인한 사측의 막대한 손해배상/가압류 청구를 제한하여 노동조합의 존립을 보호하고자 합니다.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow border border-stone-200">
+                    <h3 class="text-xl font-bold text-red-800 mb-4 flex items-center">
+                        <span class="text-2xl mr-2">🔀</span> 교섭창구 단일화 절차 (복수노조 체제)
+                    </h3>
+                    <p class="text-stone-700 mb-4 text-sm">한 기업 내에 여러 노동조합이 있을 경우, 혼란을 막기 위해 사용자와 교섭할 대표를 정하는 법적 의무 절차입니다. 대표 노조는 모든 노조원을 위한 <strong>'공정대표의무'</strong>를 지닙니다.</p>
+
+                    <div class="relative mt-6">
+                        <div class="absolute left-6 top-0 bottom-0 w-0.5 bg-stone-300"></div>
+                        
+                        <div class="relative flex items-start mb-6">
+                            <div class="w-12 h-12 bg-red-100 rounded-full border-4 border-white flex items-center justify-center font-bold text-red-800 shadow z-10 shrink-0">1</div>
+                            <div class="ml-4 bg-stone-50 p-4 rounded-lg border border-stone-200 w-full cursor-pointer hover:bg-red-50 transition" onclick="toggleStep('step1')">
+                                <h4 class="font-bold text-stone-900">자율적 단일화 결정 (14일)</h4>
+                                <div id="step1" class="hidden mt-2 text-sm text-stone-600">노조들끼리 자율적으로 교섭 대표를 정하거나, 사용자가 '개별 교섭'에 동의하면 단일화 절차 없이 각각 교섭을 진행할 수 있습니다.</div>
+                            </div>
+                        </div>
+
+                        <div class="relative flex items-start mb-6">
+                            <div class="w-12 h-12 bg-red-100 rounded-full border-4 border-white flex items-center justify-center font-bold text-red-800 shadow z-10 shrink-0">2</div>
+                            <div class="ml-4 bg-stone-50 p-4 rounded-lg border border-stone-200 w-full cursor-pointer hover:bg-red-50 transition" onclick="toggleStep('step2')">
+                                <h4 class="font-bold text-stone-900">과반수 노동조합 확정</h4>
+                                <div id="step2" class="hidden mt-2 text-sm text-stone-600">자율 결정에 실패한 경우, 절차에 참여한 전체 조합원의 과반수를 차지하는 단일 노동조합(또는 연합체)이 자동으로 '교섭대표노동조합'이 됩니다.</div>
+                            </div>
+                        </div>
+
+                        <div class="relative flex items-start">
+                            <div class="w-12 h-12 bg-red-100 rounded-full border-4 border-white flex items-center justify-center font-bold text-red-800 shadow z-10 shrink-0">3</div>
+                            <div class="ml-4 bg-stone-50 p-4 rounded-lg border border-stone-200 w-full cursor-pointer hover:bg-red-50 transition" onclick="toggleStep('step3')">
+                                <h4 class="font-bold text-stone-900">공동교섭대표단 구성</h4>
+                                <div id="step3" class="hidden mt-2 text-sm text-stone-600">과반수 노조도 없는 경우, 조합원 10% 이상을 확보한 노조들이 비율에 따라 공동교섭대표단을 구성하거나 노동위원회 결정을 따릅니다.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-stone-900 text-stone-400 py-8 text-center text-sm mt-12 border-t border-stone-800">
+        <p>&copy; 2026 고용관계론 Interactive Study Dashboard. Created based on lecture materials.</p>
+    </footer>
+
+    <script>
+        const navButtons = document.querySelectorAll('.nav-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        navButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.getAttribute('data-target');
+                
+                navButtons.forEach(b => {
+                    b.classList.remove('bg-stone-700', 'text-white');
+                    b.classList.add('bg-transparent', 'text-stone-300');
+                });
+                btn.classList.remove('bg-transparent', 'text-stone-300');
+                btn.classList.add('bg-stone-700', 'text-white');
+
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(targetId).classList.add('active');
+            });
+        });
+
+        function toggleTheoryDetail(idPrefix) {
+            const detailDiv = document.getElementById('detail-' + idPrefix);
+            if (detailDiv.classList.contains('hidden')) {
+                detailDiv.classList.remove('hidden');
+                detailDiv.parentElement.parentElement.classList.add('ring-2', 'ring-offset-2');
+                if(idPrefix === 'unit') detailDiv.parentElement.parentElement.classList.add('ring-blue-500');
+                if(idPrefix === 'plur') detailDiv.parentElement.parentElement.classList.add('ring-teal-500');
+                if(idPrefix === 'rad') detailDiv.parentElement.parentElement.classList.add('ring-red-500');
+            } else {
+                detailDiv.classList.add('hidden');
+                detailDiv.parentElement.parentElement.className = 'interactive-card bg-white rounded-xl shadow border border-stone-200 overflow-hidden cursor-pointer';
+            }
+        }
+
+        const functionBtns = document.querySelectorAll('.function-btn');
+        functionBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetFunc = btn.getAttribute('data-func');
+                
+                functionBtns.forEach(b => {
+                    b.classList.remove('text-teal-700', 'border-b-2', 'border-teal-600');
+                    b.classList.add('text-stone-500');
+                });
+                btn.classList.remove('text-stone-500');
+                btn.classList.add('text-teal-700', 'border-b-2', 'border-teal-600');
+
+                document.getElementById('func-eco').classList.add('hidden');
+                document.getElementById('func-mut').classList.add('hidden');
+                document.getElementById('func-dem').classList.add('hidden');
+                
+                document.getElementById('func-' + targetFunc).classList.remove('hidden');
+            });
+        });
+
+        const countryBtns = document.querySelectorAll('.country-btn');
+        countryBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetCountry = btn.getAttribute('data-country');
+                
+                countryBtns.forEach(b => {
+                    b.classList.remove('bg-indigo-50', 'border-indigo-600', 'text-indigo-800');
+                    b.classList.add('bg-white', 'border-stone-200', 'text-stone-600');
+                });
+                btn.classList.remove('bg-white', 'border-stone-200', 'text-stone-600');
+                btn.classList.add('bg-indigo-50', 'border-indigo-600', 'text-indigo-800');
+
+                document.querySelectorAll('.country-content').forEach(c => c.classList.add('hidden'));
+                document.getElementById('content-' + targetCountry).classList.remove('hidden');
+            });
+        });
+
+        function toggleStep(stepId) {
+            const stepDiv = document.getElementById(stepId);
+            stepDiv.classList.toggle('hidden');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('unionTypeChart').getContext('2d');
+            const data = {
+                labels: ['조합원 연대감', '정치적 영향력', '교섭의 전문성(기술)', '기업 내 교섭력', '노동시장 지배력'],
+                datasets: [
+                    {
+                        label: '기업별 노조 (Enterprise)',
+                        data: [8, 3, 2, 9, 3],
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 2
+                    },
+                    {
+                        label: '산업별 노조 (Industrial)',
+                        data: [5, 9, 4, 6, 8],
+                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                        borderColor: 'rgba(16, 185, 129, 1)',
+                        pointBackgroundColor: 'rgba(16, 185, 129, 1)',
+                        borderWidth: 2
+                    },
+                    {
+                        label: '직종별 노조 (Craft)',
+                        data: [9, 5, 10, 4, 7],
+                        backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                        borderColor: 'rgba(239, 68, 68, 1)',
+                        pointBackgroundColor: 'rgba(239, 68, 68, 1)',
+                        borderWidth: 2
+                    }
+                ]
+            };
+
+            const config = {
+                type: 'radar',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            min: 0,
+                            max: 10,
+                            ticks: { display: false },
+                            grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                            pointLabels: {
+                                font: { family: "'Pretendard', sans-serif", size: 12, weight: 'bold' },
+                                color: '#444'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { family: "'Pretendard', sans-serif" } } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.formattedValue;
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            new Chart(ctx, config);
+        });
+    </script>
+</body>
+</html>
