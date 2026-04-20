@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>상금은동님을 위한 생산관리(OM) 마스터 대시보드</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+/* <!-- Chosen Palette: Warm Neutral Professional (Beige, Warm Gray, Teal 700, Amber 600) --> */
+/* <!-- Application Structure Plan: This SPA uses a dashboard structure divided into four functional tabs: 'My Progress' (showing user quiz data), 'Product & Process' (PLC and Process types), 'Location & Layout' (Interactive Factor Rating), and 'Work Measurement' (Interactive Time Study Calculator). This non-linear structure allows the user ('상금은동') to focus directly on their weak points identified in the quiz while reviewing core OM principles in an interactive, exploratory manner. --> */
+/* <!-- Visualization & Content Choices: 1. Quiz Results -> Goal: Inform -> Radar Chart (Chart.js) -> Hover for details -> Justifies targeting weak areas. 2. PLC -> Goal: Inform/Change -> Line Chart (Chart.js) -> Tooltips -> Shows lifecycle phases clearly. 3. Process Strategy -> Goal: Compare/Relationships -> Scatter Chart (Chart.js) -> Visualizes Volume vs Variety matrix. 4. Factor Rating -> Goal: Compare -> Bar Chart (Chart.js) with JS Inputs -> Interactive weight adjustment -> Teaches location decision logic dynamically. 5. Time Study -> Goal: Inform/Calculate -> JS interactive text/progress -> Real-time feedback on OM formulas. NO SVG/Mermaid used. --> */
+/* <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. --> */
+body {
+    background-color: #F9FAFB;
+    color: #1F2937;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.chart-container {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    height: 350px;
+    max-height: 400px;
+}
+@media (min-width: 768px) {
+    .chart-container {
+        height: 400px;
+    }
+}
+.tab-content {
+    display: none;
+    animation: fadeIn 0.4s ease-in-out;
+}
+.tab-content.active {
+    display: block;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.glass-card {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #E5E7EB;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    border-radius: 0.75rem;
+}
+input[type=number] {
+    transition: all 0.2s;
+}
+input[type=number]:focus {
+    outline: none;
+    border-color: #0F766E;
+    box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.2);
+}
+</style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+<header class="bg-teal-800 text-white shadow-lg sticky top-0 z-50">
+    <div class="container mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center">
+        <div class="flex items-center gap-3 mb-4 md:mb-0">
+            <span class="text-2xl">🏭</span>
+            <div>
+                <h1 class="text-xl font-bold tracking-wide">생산관리(OM) 인터랙티브 가이드</h1>
+                <p class="text-teal-200 text-sm">상금은동님의 오답 정복 & 핵심 역량 강화</p>
+            </div>
+        </div>
+        <nav class="flex gap-2 bg-teal-900/50 p-1 rounded-lg overflow-x-auto w-full md:w-auto">
+            <button onclick="switchTab('progress')" id="btn-progress" class="tab-btn px-4 py-2 rounded-md bg-white text-teal-800 font-semibold shadow transition whitespace-nowrap">📊 학습 분석</button>
+            <button onclick="switchTab('process')" id="btn-process" class="tab-btn px-4 py-2 rounded-md text-teal-100 hover:bg-teal-700 transition whitespace-nowrap">⚙️ 제품 및 공정</button>
+            <button onclick="switchTab('location')" id="btn-location" class="tab-btn px-4 py-2 rounded-md text-teal-100 hover:bg-teal-700 transition whitespace-nowrap">🌍 입지 및 배치</button>
+            <button onclick="switchTab('work')" id="btn-work" class="tab-btn px-4 py-2 rounded-md text-teal-100 hover:bg-teal-700 transition whitespace-nowrap">⏱️ 작업 측정(계산기)</button>
+        </nav>
+    </div>
+</header>
+
+<main class="flex-grow container mx-auto px-4 py-8">
+
+    <section id="progress" class="tab-content active">
+        <div class="mb-8 bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg">
+            <h2 class="text-lg font-bold text-amber-800 mb-2">섹션 안내: 학습 분석 대시보드</h2>
+            <p class="text-sm text-amber-900 leading-relaxed">
+                상금은동님의 최근 생산관리 퀴즈 결과를 시각화한 공간입니다. 품질 관리, 인적 자원 설계 등 강점을 보이는 영역과 계산 및 공정 전략 등 보완이 필요한 영역을 한눈에 파악할 수 있습니다. 이를 바탕으로 어떤 모듈을 중점적으로 학습해야 할지 전략을 세워보세요.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="glass-card p-6 flex flex-col items-center">
+                <h3 class="text-xl font-bold text-teal-800 mb-4 border-b-2 border-teal-100 pb-2 w-full text-center">OM 역량 레이더 차트</h3>
+                <div class="chart-container">
+                    <canvas id="radarChart"></canvas>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-6">
+                <div class="glass-card p-6 bg-white">
+                    <h3 class="text-lg font-bold text-teal-700 flex items-center gap-2 mb-4"><span>⭐</span> 우수 역량 (강점)</h3>
+                    <ul class="space-y-3">
+                        <li class="flex flex-col">
+                            <span class="font-semibold text-gray-800">품질 관리 및 제품 설계</span>
+                            <span class="text-sm text-gray-600">QFD, 로버스트 설계, FMS 및 디지털 트윈 개념 완벽 이해</span>
+                        </li>
+                        <li class="flex flex-col">
+                            <span class="font-semibold text-gray-800">인적 자원 관리 및 직무 설계</span>
+                            <span class="text-sm text-gray-600">직무 확대/충실화, 인간공학적 요소, 작업 분석 도구 활용 탁월</span>
+                        </li>
+                        <li class="flex flex-col">
+                            <span class="font-semibold text-gray-800">서비스 전략 및 글로벌 운영</span>
+                            <span class="text-sm text-gray-600">다국가 전략, 서비스의 무형성 및 소멸성 완벽 구분</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="glass-card p-6 bg-white border-2 border-amber-200">
+                    <h3 class="text-lg font-bold text-amber-700 flex items-center gap-2 mb-4"><span>📈</span> 집중 보완 영역</h3>
+                    <ul class="space-y-3">
+                        <li class="flex flex-col">
+                            <span class="font-semibold text-gray-800">공정 전략 및 설비 배치</span>
+                            <span class="text-sm text-gray-600">공정 중심(Job Shop) vs 제품 중심(Line) 특성, 교차점 분석 복습 필요</span>
+                        </li>
+                        <li class="flex flex-col">
+                            <span class="font-semibold text-gray-800">생산 운영 계산 공식</span>
+                            <span class="text-sm text-gray-600">사이클 타임, 택트 타임, 표준 시간(여유율 적용) 정확한 계산 연습 필요</span>
+                        </li>
+                        <li class="flex flex-col">
+                            <span class="font-semibold text-gray-800">입지 선정 및 SCM</span>
+                            <span class="text-sm text-gray-600">무게중심법과 채찍 효과(Bullwhip Effect) 개념 명확화 필요</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-8 glass-card p-6">
+            <h3 class="text-xl font-bold text-teal-800 mb-4 border-b-2 border-teal-100 pb-2">📚 핵심 용어 사전 (클릭하여 확인)</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="p-4 border border-teal-100 rounded-lg hover:bg-teal-50 transition cursor-pointer" onclick="toggleVocab('vocab1')">
+                    <h4 class="font-bold text-teal-700">로버스트 설계 (Robust Design) ▾</h4>
+                    <p id="vocab1" class="text-sm text-gray-600 mt-2 hidden">생산 공정의 미세한 변동이나 조립 오차가 품질에 나쁜 영향을 주지 않도록 견고하게 설계하는 방식.</p>
+                </div>
+                <div class="p-4 border border-teal-100 rounded-lg hover:bg-teal-50 transition cursor-pointer" onclick="toggleVocab('vocab2')">
+                    <h4 class="font-bold text-teal-700">크로스 도킹 (Cross-docking) ▾</h4>
+                    <p id="vocab2" class="text-sm text-gray-600 mt-2 hidden">창고 입고 후 보관 없이 즉시 출하 독(Dock)으로 옮겨 재고 보관 비용과 시간을 최소화하는 물류 기법.</p>
+                </div>
+                <div class="p-4 border border-teal-100 rounded-lg hover:bg-teal-50 transition cursor-pointer" onclick="toggleVocab('vocab3')">
+                    <h4 class="font-bold text-teal-700">임파워먼트 (Empowerment) ▾</h4>
+                    <p id="vocab3" class="text-sm text-gray-600 mt-2 hidden">직원에게 업무 결정권과 책임을 위임하여 자기 결정권을 높이고 동기부여를 강화하는 인적 자원 전략.</p>
+                </div>
+                <div class="p-4 border border-teal-100 rounded-lg hover:bg-teal-50 transition cursor-pointer" onclick="toggleVocab('vocab4')">
+                    <h4 class="font-bold text-teal-700">포카 요케 (Poka-yoke) ▾</h4>
+                    <p id="vocab4" class="text-sm text-gray-600 mt-2 hidden">실수 방지 장치. 작업자의 실수나 불량이 다음 단계 공정으로 넘어가지 않도록 구조적으로 차단하는 기법.</p>
+                </div>
+                <div class="p-4 border border-teal-100 rounded-lg hover:bg-teal-50 transition cursor-pointer" onclick="toggleVocab('vocab5')">
+                    <h4 class="font-bold text-teal-700">채찍 효과 (Bullwhip Effect) ▾</h4>
+                    <p id="vocab5" class="text-sm text-gray-600 mt-2 hidden">공급망 하류(소비자)의 작은 수요 변동이 상류(제조사)로 갈수록 정보 왜곡으로 인해 크게 증폭되는 현상.</p>
+                </div>
+                <div class="p-4 border border-teal-100 rounded-lg hover:bg-teal-50 transition cursor-pointer" onclick="toggleVocab('vocab6')">
+                    <h4 class="font-bold text-teal-700">디지털 트윈 (Digital Twin) ▾</h4>
+                    <p id="vocab6" class="text-sm text-gray-600 mt-2 hidden">가상 공간에 실제 물리적 자산과 동일한 쌍둥이 모델을 만들어 시뮬레이션 및 예측 분석을 수행하는 스마트 팩토리 기술.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="process" class="tab-content">
+        <div class="mb-8 bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg">
+            <h2 class="text-lg font-bold text-amber-800 mb-2">섹션 안내: 제품 및 공정 전략</h2>
+            <p class="text-sm text-amber-900 leading-relaxed">
+                이 섹션에서는 제품 수명 주기(PLC)에 따른 재무적 흐름과, 생산량(Volume)과 다양성(Variety)에 따른 4가지 핵심 공정 전략을 탐구합니다. 취약점으로 분석된 '공정 중심'과 '제품 중심'의 차이를 시각적 매트릭스를 통해 확실히 이해할 수 있습니다.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="glass-card p-6 flex flex-col">
+                <h3 class="text-xl font-bold text-teal-800 mb-2 border-b-2 border-teal-100 pb-2">제품 수명 주기 (Product Life Cycle)</h3>
+                <p class="text-sm text-gray-600 mb-4">성장기(Growth)에는 제품 설계가 안정화되며 **생산 용량(Capacity) 확충**이 가장 핵심적인 과제가 됩니다.</p>
+                <div class="chart-container flex-grow">
+                    <canvas id="plcChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glass-card p-6 flex flex-col">
+                <h3 class="text-xl font-bold text-teal-800 mb-2 border-b-2 border-teal-100 pb-2">공정 전략 매트릭스 (Volume vs Variety)</h3>
+                <p class="text-sm text-gray-600 mb-4">소량 다품종(병원, 수리점)은 공정 중심, 대량 소품종(제과점, 제강소)은 제품 중심 전략을 취합니다.</p>
+                <div class="chart-container flex-grow">
+                    <canvas id="processMatrixChart"></canvas>
+                </div>
+                <div class="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm">
+                    <p>💡 <strong>교차점 분석(Crossover Chart):</strong> 제품 중심(Product Focus)은 고정비가 높지만 변동비가 낮아 <strong>생산량이 매우 많을 때</strong> 경제적으로 유리합니다.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="location" class="tab-content">
+        <div class="mb-8 bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg">
+            <h2 class="text-lg font-bold text-amber-800 mb-2">섹션 안내: 입지 및 배치 전략</h2>
+            <p class="text-sm text-amber-900 leading-relaxed">
+                단순히 거리가 가깝거나 비용이 저렴하다고 최적의 입지가 아닙니다. '노동 생산성'을 고려해야 하며, 여러 요소를 종합적으로 평가하는 '요인평점법(Factor-rating method)'을 직접 인터랙티브하게 실습해보며 입지 결정의 논리를 학습합니다. 하단의 배치 전략 요약도 확인하세요.
+            </p>
+        </div>
+
+        <div class="glass-card p-6 mb-8">
+            <h3 class="text-xl font-bold text-teal-800 mb-4 border-b-2 border-teal-100 pb-2">인터랙티브 요인평점법 (Factor-Rating Calculator)</h3>
+            <p class="text-sm text-gray-600 mb-6">슬라이더를 조절하여 각 요인의 가중치(Weight)를 변경해보세요. 가중치에 따라 최종 후보지의 점수가 어떻게 변하는지 차트를 통해 확인할 수 있습니다.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="col-span-1 space-y-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">노동 생산성 가중치: <span id="weight-labor-val" class="text-teal-600">0.4</span></label>
+                        <input type="range" id="weight-labor" min="0" max="1" step="0.1" value="0.4" class="w-full accent-teal-600" oninput="updateFactorRating()">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">시장 근접성 가중치: <span id="weight-market-val" class="text-teal-600">0.3</span></label>
+                        <input type="range" id="weight-market" min="0" max="1" step="0.1" value="0.3" class="w-full accent-teal-600" oninput="updateFactorRating()">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">인프라/세제 혜택 가중치: <span id="weight-infra-val" class="text-teal-600">0.3</span></label>
+                        <input type="range" id="weight-infra" min="0" max="1" step="0.1" value="0.3" class="w-full accent-teal-600" oninput="updateFactorRating()">
+                    </div>
+                    <div id="weight-warning" class="text-red-500 text-xs font-bold hidden">가중치의 합은 1.0이 되어야 합니다! 현재 합계: <span id="weight-total">1.0</span></div>
+                </div>
+                
+                <div class="col-span-1 md:col-span-2">
+                    <div class="chart-container">
+                        <canvas id="factorRatingChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 p-3 bg-teal-50 rounded-lg border border-teal-200 text-sm">
+                <p>📍 <strong>무게중심법(Center-of-gravity):</strong> 요인평점법과 달리 수송 거리와 <strong>물동량</strong>만을 기준으로 최적의 물류 센터 좌표를 찾는 양적 기법입니다.</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="glass-card p-6 bg-white border-l-4 border-teal-500">
+                <h4 class="font-bold text-lg text-gray-800 mb-2">제품별 배치 (Product-oriented Layout)</h4>
+                <p class="text-sm text-gray-600">대량 생산을 위한 라인형 배치입니다. 효율성이 매우 높지만, 공정 중 <strong>어느 한 곳이라도 멈추면 전체 라인이 중단</strong>되는 높은 상호의존성이 치명적 단점입니다.</p>
+            </div>
+            <div class="glass-card p-6 bg-white border-l-4 border-amber-500">
+                <h4 class="font-bold text-lg text-gray-800 mb-2">고정 위치 배치 (Fixed-position Layout)</h4>
+                <p class="text-sm text-gray-600">제품(예: 교량, 선박)이 너무 커서 이동이 불가능하므로 자재, 인력, 장비가 <strong>제품이 있는 곳으로 이동</strong>하여 작업하는 방식입니다.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="work" class="tab-content">
+        <div class="mb-8 bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg">
+            <h2 class="text-lg font-bold text-amber-800 mb-2">섹션 안내: 작업 측정 및 계산기</h2>
+            <p class="text-sm text-amber-900 leading-relaxed">
+                오답 노트에서 파악된 가장 취약한 영역입니다. 사이클 타임(Cycle Time), 정상 시간(Normal Time), 표준 시간(Standard Time)의 관계를 명확히 구분해야 합니다. 특히 표준 시간 계산 시 <strong>여유율(Allowance)을 분모에서 빼는 방식</strong>을 아래 계산기를 통해 직접 숫자를 넣어보며 체득하세요.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="glass-card p-6 bg-white shadow-md">
+                <h3 class="text-xl font-bold text-teal-800 mb-4 border-b-2 border-teal-100 pb-2">작업 시간 동적 계산기</h3>
+                
+                <div class="space-y-5">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">평균 관측 시간 (분)</label>
+                        <input type="number" id="calc-obs" value="10" min="1" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500" oninput="calculateTimes()">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">수행 등급 (Rating %) <span class="text-xs text-gray-500 font-normal">보통 100% 기준</span></label>
+                        <input type="number" id="calc-rating" value="120" min="1" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500" oninput="calculateTimes()">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">여유율 (Allowance %) <span class="text-xs text-gray-500 font-normal">피로, 지연 등 보상</span></label>
+                        <input type="number" id="calc-allowance" value="20" min="0" max="99" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500" oninput="calculateTimes()">
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <h4 class="text-center font-bold text-gray-500 mb-4 text-sm uppercase tracking-wider">계산 결과</h4>
+                    
+                    <div class="flex justify-between items-center mb-4 bg-teal-50 p-4 rounded-lg">
+                        <div>
+                            <span class="block text-xs font-bold text-teal-800 uppercase">정상 시간 (NT)</span>
+                            <span class="text-[10px] text-teal-600">관측시간 × 수행등급</span>
+                        </div>
+                        <div class="text-2xl font-bold text-teal-900" id="res-nt">12.00 <span class="text-base font-normal">분</span></div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center bg-amber-50 p-4 rounded-lg border-2 border-amber-200">
+                        <div>
+                            <span class="block text-xs font-bold text-amber-800 uppercase">표준 시간 (ST) 🚨주의!</span>
+                            <span class="text-[10px] text-amber-600">NT / (1 - 여유율)</span>
+                        </div>
+                        <div class="text-3xl font-black text-amber-700" id="res-st">15.00 <span class="text-base font-normal">분</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-6">
+                <div class="glass-card p-6 bg-teal-800 text-white">
+                    <h4 class="font-bold text-lg mb-2 flex items-center gap-2"><span>⏱️</span> 주요 시간 지표 비교</h4>
+                    <ul class="space-y-4 mt-4">
+                        <li class="border-b border-teal-700 pb-3">
+                            <strong class="block text-teal-200">사이클 타임 (Cycle Time)</strong>
+                            <span class="text-sm">일일 가용 조업 시간 / 일일 목표 생산량. 제품 1개를 생산하는데 <strong>허용되는</strong> 최대 시간입니다.</span>
+                        </li>
+                        <li class="border-b border-teal-700 pb-3">
+                            <strong class="block text-teal-200">택트 타임 (Takt Time)</strong>
+                            <span class="text-sm">고객의 수요에 맞춰 제품 하나가 생산되어야 하는 시간 간격. <strong>생산의 리듬</strong>을 결정합니다.</span>
+                        </li>
+                        <li>
+                            <strong class="block text-teal-200">조립 라인 균형화 (Line Balancing)</strong>
+                            <span class="text-sm">효율성(Efficiency)을 높이려면 각 작업장의 작업 시간을 사이클 타임에 최대한 가깝게 맞춰 <strong>유휴 시간(Idle Time)을 최소화</strong>해야 합니다.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<footer class="bg-gray-800 text-gray-300 py-6 text-center text-sm">
+    <p>상명대학교 생산관리(OM) 학습 대시보드 - Designed for 상금은동</p>
+</footer>
+
+<script>
+// --- State Management & Navigation ---
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-white', 'text-teal-800', 'font-semibold', 'shadow');
+        btn.classList.add('text-teal-100', 'hover:bg-teal-700');
+    });
+    
+    const activeBtn = document.getElementById('btn-' + tabId);
+    activeBtn.classList.remove('text-teal-100', 'hover:bg-teal-700');
+    activeBtn.classList.add('bg-white', 'text-teal-800', 'font-semibold', 'shadow');
+
+    // Trigger chart renders if they haven't been rendered yet or need resizing
+    if(tabId === 'progress' && !radarChartInstance) initRadarChart();
+    if(tabId === 'process' && !plcChartInstance) { initPLCChart(); initProcessMatrixChart(); }
+    if(tabId === 'location' && !factorRatingChartInstance) initFactorRatingChart();
+}
+
+function toggleVocab(id) {
+    const el = document.getElementById(id);
+    el.classList.toggle('hidden');
+}
+
+// --- Chart.js Global Config ---
+Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+Chart.defaults.color = '#4B5563';
+
+// --- Global Chart Instances ---
+let radarChartInstance = null;
+let plcChartInstance = null;
+let processMatrixChartInstance = null;
+let factorRatingChartInstance = null;
+
+// --- Chart 1: Radar Chart (Progress) ---
+function initRadarChart() {
+    const ctx = document.getElementById('radarChart').getContext('2d');
+    radarChartInstance = new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: ['품질 및 제품 설계', '인적 자원 관리', '서비스 전략', '공정/설비 배치', '계산 공식 적용', '입지/SCM'],
+            datasets: [{
+                label: '상금은동님 현재 역량',
+                data: [95, 100, 90, 40, 50, 60],
+                backgroundColor: 'rgba(15, 118, 110, 0.2)',
+                borderColor: 'rgba(15, 118, 110, 1)',
+                pointBackgroundColor: 'rgba(217, 119, 6, 1)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(217, 119, 6, 1)',
+                borderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    angleLines: { color: 'rgba(0, 0, 0, 0.1)' },
+                    suggestedMin: 0,
+                    suggestedMax: 100,
+                    ticks: { stepSize: 20, backdropColor: 'transparent' }
+                }
+            },
+            plugins: {
+                legend: { position: 'bottom' },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) { label += ': '; }
+                            if (context.parsed.r !== null) { label += context.parsed.r + '점'; }
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// --- Chart 2: Product Life Cycle (Process Tab) ---
+function initPLCChart() {
+    const ctx = document.getElementById('plcChart').getContext('2d');
+    plcChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['도입기', '성장기', '성숙기', '쇠퇴기'],
+            datasets: [
+                {
+                    label: '매출 (Sales)',
+                    data: [10, 50, 90, 60],
+                    borderColor: '#0F766E',
+                    backgroundColor: 'rgba(15, 118, 110, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    borderWidth: 3
+                },
+                {
+                    label: '이익 (Profit)',
+                    data: [-20, 10, 40, 20],
+                    borderColor: '#D97706',
+                    backgroundColor: 'transparent',
+                    tension: 0.4,
+                    borderWidth: 2,
+                    borderDash: [5, 5]
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        afterBody: function(context) {
+                            if (context[0].label === '성장기') {
+                                return '\n핵심 전략: 생산 용량(Capacity) 확충';
+                            } else if (context[0].label === '성숙기') {
+                                return '\n핵심 전략: 원가 절감 및 생산성 향상';
+                            }
+                            return '';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: { display: false, min: -30, max: 100 },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+}
+
+// --- Chart 3: Process Strategy Matrix (Process Tab) ---
+function initProcessMatrixChart() {
+    const ctx = document.getElementById('processMatrixChart').getContext('2d');
+    processMatrixChartInstance = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+            datasets: [
+                {
+                    label: '공정 중심 (Job Shop)',
+                    data: [{x: 20, y: 80}],
+                    backgroundColor: '#D97706',
+                    pointRadius: 15,
+                    pointHoverRadius: 18
+                },
+                {
+                    label: '반복 중심 (Assembly Line)',
+                    data: [{x: 50, y: 50}],
+                    backgroundColor: '#6B7280',
+                    pointRadius: 15,
+                    pointHoverRadius: 18
+                },
+                {
+                    label: '제품 중심 (Continuous)',
+                    data: [{x: 80, y: 20}],
+                    backgroundColor: '#0F766E',
+                    pointRadius: 15,
+                    pointHoverRadius: 18
+                },
+                {
+                    label: '대량 맞춤화 (Mass Custom)',
+                    data: [{x: 80, y: 80}],
+                    backgroundColor: '#8B5CF6',
+                    pointRadius: 15,
+                    pointHoverRadius: 18
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const labels = {
+                                '공정 중심 (Job Shop)': '병원, 수리점 (소량 다품종)',
+                                '반복 중심 (Assembly Line)': '자동차, 할리데이비슨 (모듈 조합)',
+                                '제품 중심 (Continuous)': '제강소, 제과점 (대량 소품종)',
+                                '대량 맞춤화 (Mass Custom)': '델 컴퓨터 (대량+유연성)'
+                            };
+                            return labels[context.dataset.label];
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: { display: true, text: '생산량 (Volume) →', font: { weight: 'bold' } },
+                    min: 0, max: 100, ticks: { display: false }, grid: { drawBorder: true }
+                },
+                y: {
+                    title: { display: true, text: '다양성 (Variety) →', font: { weight: 'bold' } },
+                    min: 0, max: 100, ticks: { display: false }, grid: { drawBorder: true }
+                }
+            }
+        }
+    });
+}
+
+// --- Chart 4: Factor Rating (Location Tab) ---
+const locA_scores = { labor: 80, market: 60, infra: 90 };
+const locB_scores = { labor: 60, market: 90, infra: 70 };
+
+function initFactorRatingChart() {
+    const ctx = document.getElementById('factorRatingChart').getContext('2d');
+    factorRatingChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['후보지 A', '후보지 B'],
+            datasets: [{
+                label: '총 가중 평점',
+                data: [0, 0],
+                backgroundColor: ['#0F766E', '#D97706'],
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { min: 0, max: 100, title: { display: true, text: '총점' } }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        afterLabel: function(context) {
+                            const wLabor = parseFloat(document.getElementById('weight-labor').value);
+                            const wMarket = parseFloat(document.getElementById('weight-market').value);
+                            const wInfra = parseFloat(document.getElementById('weight-infra').value);
+                            const scores = context.dataIndex === 0 ? locA_scores : locB_scores;
+                            return `\n노동: ${scores.labor} × ${wLabor}\n시장: ${scores.market} × ${wMarket}\n인프라: ${scores.infra} × ${wInfra}`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    updateFactorRating();
+}
+
+function updateFactorRating() {
+    const wLabor = parseFloat(document.getElementById('weight-labor').value);
+    const wMarket = parseFloat(document.getElementById('weight-market').value);
+    const wInfra = parseFloat(document.getElementById('weight-infra').value);
+    
+    document.getElementById('weight-labor-val').innerText = wLabor.toFixed(1);
+    document.getElementById('weight-market-val').innerText = wMarket.toFixed(1);
+    document.getElementById('weight-infra-val').innerText = wInfra.toFixed(1);
+    
+    const total = wLabor + wMarket + wInfra;
+    document.getElementById('weight-total').innerText = total.toFixed(1);
+    
+    const warningEl = document.getElementById('weight-warning');
+    if (Math.abs(total - 1.0) > 0.01) {
+        warningEl.classList.remove('hidden');
+    } else {
+        warningEl.classList.add('hidden');
+    }
+
+    if(factorRatingChartInstance) {
+        const scoreA = (locA_scores.labor * wLabor) + (locA_scores.market * wMarket) + (locA_scores.infra * wInfra);
+        const scoreB = (locB_scores.labor * wLabor) + (locB_scores.market * wMarket) + (locB_scores.infra * wInfra);
+        
+        factorRatingChartInstance.data.datasets[0].data = [scoreA, scoreB];
+        factorRatingChartInstance.update();
+    }
+}
+
+// --- Time Study Calculator (Work Tab) ---
+function calculateTimes() {
+    const obs = parseFloat(document.getElementById('calc-obs').value) || 0;
+    const ratingPct = parseFloat(document.getElementById('calc-rating').value) || 0;
+    const allowPct = parseFloat(document.getElementById('calc-allowance').value) || 0;
+
+    const rating = ratingPct / 100;
+    const allowance = allowPct / 100;
+
+    const nt = obs * rating;
+    let st = 0;
+    
+    if (allowance < 1) {
+        st = nt / (1 - allowance);
+    }
+
+    document.getElementById('res-nt').innerHTML = nt.toFixed(2) + ' <span class="text-base font-normal">분</span>';
+    
+    if (allowance >= 1) {
+        document.getElementById('res-st').innerHTML = '오류 <span class="text-xs font-normal text-amber-900 block mt-1">여유율은 100% 미만이어야 합니다.</span>';
+    } else {
+        document.getElementById('res-st').innerHTML = st.toFixed(2) + ' <span class="text-base font-normal">분</span>';
+    }
+}
+
+// --- Initialize First Tab ---
+document.addEventListener('DOMContentLoaded', () => {
+    initRadarChart();
+    calculateTimes();
+});
+</script>
+</body>
+</html>
