@@ -1,0 +1,502 @@
+```html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>문과생을 위한 데이터 대시보드 (4~6주차)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg-body: #f4f1ea;
+            --bg-panel: #ffffff;
+            --primary-dark: #3e2723;
+            --primary-accent: #d84315;
+            --secondary-accent: #00695c;
+            --text-main: #4e342e;
+            --text-light: #795548;
+            --border-color: #d7ccc8;
+            --highlight: #fff3e0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 280px;
+            background-color: var(--primary-dark);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+
+        .sidebar-header {
+            padding: 30px 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar-header h1 {
+            font-family: 'Noto Serif KR', serif;
+            font-size: 24px;
+            margin: 0;
+            color: #ffccbc;
+            line-height: 1.4;
+        }
+
+        .sidebar-header p {
+            font-size: 13px;
+            color: #bcaaa4;
+            margin-top: 10px;
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 20px 0;
+            margin: 0;
+            flex-grow: 1;
+        }
+
+        .nav-item {
+            padding: 15px 30px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .nav-item i {
+            font-size: 20px;
+            width: 24px;
+            text-align: center;
+        }
+
+        .nav-item:hover {
+            background-color: rgba(255,255,255,0.05);
+        }
+
+        .nav-item.active {
+            background-color: rgba(255,255,255,0.1);
+            border-left-color: var(--primary-accent);
+            color: #ffccbc;
+        }
+
+        /* Main Content Styling */
+        .main-content {
+            flex-grow: 1;
+            padding: 40px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .week-section {
+            display: none;
+            max-width: 1000px;
+            margin: 0 auto;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .week-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-header {
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .section-header h2 {
+            font-family: 'Noto Serif KR', serif;
+            font-size: 38px;
+            color: var(--primary-dark);
+            margin: 0 0 10px 0;
+        }
+
+        .section-header p {
+            font-size: 18px;
+            color: var(--text-light);
+            margin: 0;
+        }
+
+        /* Cards Layout */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background-color: var(--bg-panel);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02), 0 10px 15px rgba(0,0,0,0.03);
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+        }
+
+        .card-icon {
+            width: 60px;
+            height: 60px;
+            background-color: var(--highlight);
+            color: var(--primary-accent);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+
+        .card.green .card-icon {
+            background-color: #e0f2f1;
+            color: var(--secondary-accent);
+        }
+
+        .card-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 0 0 15px 0;
+            color: var(--primary-dark);
+        }
+
+        .card-text {
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--text-main);
+            margin: 0;
+        }
+
+        /* Code Explanation Block */
+        .code-box {
+            background-color: #263238;
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 20px;
+            color: #eceff1;
+            font-family: monospace;
+            font-size: 16px;
+            position: relative;
+        }
+
+        .code-box::before {
+            content: "마법의 주문(코드)";
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background-color: var(--primary-accent);
+            color: white;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-family: 'Noto Sans KR', sans-serif;
+            font-weight: bold;
+        }
+
+        .code-comment {
+            color: #81c784;
+            display: block;
+            margin-bottom: 8px;
+            font-family: 'Noto Sans KR', sans-serif;
+            font-size: 14px;
+        }
+
+        .code-line {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        /* Analogy Box */
+        .analogy-box {
+            background-color: var(--highlight);
+            border-left: 5px solid var(--primary-accent);
+            padding: 20px 25px;
+            border-radius: 0 12px 12px 0;
+            margin: 30px 0;
+            font-size: 17px;
+            line-height: 1.6;
+        }
+
+        .analogy-box strong {
+            color: var(--primary-accent);
+        }
+
+        /* Wide Feature Card */
+        .wide-card {
+            background-color: var(--bg-panel);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+            margin-bottom: 40px;
+            display: flex;
+            gap: 40px;
+            align-items: center;
+        }
+
+        .wide-card-content {
+            flex: 1;
+        }
+
+        .wide-card-visual {
+            flex: 1;
+            background-color: #f5f5f5;
+            border-radius: 12px;
+            height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 80px;
+            color: #bdbdbd;
+        }
+
+        strong.highlight {
+            background: linear-gradient(180deg, rgba(255,255,255,0) 60%, rgba(255, 204, 188, 0.8) 60%);
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h1>문과생 데이터 번역기</h1>
+            <p>4주차 ~ 6주차 통합 강의노트</p>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item active" onclick="switchTab('week4')">
+                <i class="fa-solid fa-book-open-reader"></i> 4주차: 데이터 요약
+            </li>
+            <li class="nav-item" onclick="switchTab('week5')">
+                <i class="fa-solid fa-palette"></i> 5주차: 시각화 기초
+            </li>
+            <li class="nav-item" onclick="switchTab('week6')">
+                <i class="fa-solid fa-paintbrush"></i> 6주차: 고급 시각화
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+
+        <!-- ==========================================
+             WEEK 4 CONTENT (데이터 요약 - 통계)
+        =========================================== -->
+        <section id="week4" class="week-section active">
+            <div class="section-header">
+                <h2>4주차. 방대한 이야기 한 줄로 요약하기</h2>
+                <p>1,000페이지짜리 두꺼운 소설을 뒷면의 '줄거리 요약본'으로 압축하는 마법, 기술통계를 배웁니다.</p>
+            </div>
+
+            <div class="analogy-box">
+                <i class="fa-solid fa-lightbulb" style="color: var(--primary-accent); margin-right: 10px;"></i>
+                수십만 개의 도서관 대출 데이터(엑셀 표)를 눈으로 다 읽을 수는 없습니다. 
+                그래서 우리는 컴퓨터에게 <strong>"이 데이터들의 전반적인 분위기가 어때? 한 줄로 요약해 봐!"</strong>라고 명령해야 합니다. 
+                이 요약본을 데이터 세계에서는 <strong>기술통계(Descriptive Statistics)</strong>라고 부릅니다.
+            </div>
+
+            <div class="card-grid">
+                <!-- Mean vs Median -->
+                <div class="card">
+                    <div class="card-icon"><i class="fa-solid fa-scale-balanced"></i></div>
+                    <h3 class="card-title">평균(Mean)과 중앙값(Median)</h3>
+                    <p class="card-text">
+                        <strong>평균</strong>은 모든 값을 더해서 공평하게 나눈 값입니다. 하지만 치명적인 단점이 있죠. 평범한 동네 식당에 갑자기 '이재용 회장'이 들어오면, 그 식당 손님들의 '평균 재산'이 수백억으로 왜곡됩니다. <br><br>
+                        그래서 <strong>중앙값</strong>이 필요합니다. 손님들을 재산 순서대로 1등부터 꼴등까지 한 줄로 세웠을 때, <strong>정확히 한가운데 서 있는 사람의 재산</strong>을 보는 것이죠. 이게 현실을 더 정확히 반영할 때가 많습니다.
+                    </p>
+                </div>
+
+                <!-- 분산과 표준편차 -->
+                <div class="card green">
+                    <div class="card-icon"><i class="fa-solid fa-bolt"></i></div>
+                    <h3 class="card-title">분산과 표준편차</h3>
+                    <p class="card-text">
+                        이름만 들어도 머리가 아프죠? 소설에 비유해 봅시다. 이야기의 전개가 얼마나 극적으로 널뛰기를 하는지를 나타내는 <strong>'막장 드라마 지수'</strong>라고 생각하세요.<br><br>
+                        데이터들이 평균(평범한 일상)에 오순도순 모여있으면 표준편차가 작고, 평균에서 벗어나 극단적으로 미쳐 날뛰면(막장 전개) 표준편차가 커집니다.
+                    </p>
+                </div>
+            </div>
+
+            <div class="wide-card">
+                <div class="wide-card-content">
+                    <h3 class="card-title">궁극의 요약 마법: <code>describe()</code></h3>
+                    <p class="card-text" style="margin-bottom: 20px;">
+                        평균 구하고, 중앙값 구하고, 일일이 명령하기 귀찮으신가요? 
+                        엑셀 표(데이터프레임) 뒤에 <code>.describe()</code>라는 주문 하나만 붙이면, 데이터의 개수, 평균, 최소값, 최대값, 중앙값까지 <strong>책의 요약본처럼 한 방에 리포트로 출력</strong>해 줍니다.
+                    </p>
+                    <div class="code-box">
+                        <span class="code-comment"># df(데이터야) .describe(너 자신을 요약해서 설명해봐)</span>
+                        <span class="code-line">df.describe()</span>
+                    </div>
+                </div>
+                <div class="wide-card-visual">
+                    <i class="fa-solid fa-file-invoice"></i>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             WEEK 5 CONTENT (시각화 기초)
+        =========================================== -->
+        <section id="week5" class="week-section">
+            <div class="section-header">
+                <h2>5주차. 숫자를 그림으로 번역하기</h2>
+                <p>답답한 엑셀 표의 숫자들을 아름다운 그래프(인포그래픽)로 그려내는 붓과 물감을 준비합니다.</p>
+            </div>
+
+            <div class="analogy-box">
+                <i class="fa-solid fa-lightbulb" style="color: var(--primary-accent); margin-right: 10px;"></i>
+                파이썬 세계에는 밥 아저씨처럼 "참 쉽죠?" 하면서 그림을 그려주는 전속 화가가 살고 있습니다. 
+                이 화가의 이름이 바로 <strong>맷플롯립(Matplotlib)</strong>입니다. 우리는 이 화가에게 어떤 그림을 어떻게 그릴지 지시만 내리면 됩니다.
+            </div>
+
+            <div class="card-grid">
+                <!-- Line Chart -->
+                <div class="card">
+                    <div class="card-icon"><i class="fa-solid fa-chart-line"></i></div>
+                    <h3 class="card-title">선 그래프 (plot)</h3>
+                    <p class="card-text">
+                        선 그래프는 소설의 <strong>'서사 구조(발단-전개-절정-결말)'</strong>를 보여줄 때 씁니다. 시간이 흐름에 따라 주식 가격이 어떻게 변했는지, 연도별 도서 대출량이 어떻게 변했는지 등 <strong>'흐름과 추세'</strong>를 보여줄 때 가장 완벽한 그림입니다.
+                    </p>
+                    <div class="code-box">
+                        <span class="code-comment"># plt(화가야) .plot(선 그래프로 그려줘)</span>
+                        <span class="code-line">plt.plot(시간, 대출량)</span>
+                    </div>
+                </div>
+
+                <!-- Bar Chart -->
+                <div class="card green">
+                    <div class="card-icon"><i class="fa-solid fa-chart-simple"></i></div>
+                    <h3 class="card-title">막대 그래프 (bar)</h3>
+                    <p class="card-text">
+                        막대 그래프는 캐릭터들의 <strong>'능력치 비교'</strong>를 할 때 씁니다. 로맨스 소설, 추리 소설, SF 소설 중 어떤 장르가 가장 많이 대출되었는지 나란히 세워두고 키를 재보는 겁니다. <strong>'누가 누가 더 크나 비교'</strong>할 때는 막대가 최고죠.
+                    </p>
+                    <div class="code-box">
+                        <span class="code-comment"># plt(화가야) .bar(막대 그래프로 그려줘)</span>
+                        <span class="code-line">plt.bar(소설장르, 대출량)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="wide-card">
+                <div class="wide-card-visual" style="font-size: 60px;">
+                    <i class="fa-solid fa-display"></i>
+                </div>
+                <div class="wide-card-content">
+                    <h3 class="card-title">그림을 다 그렸으면 보여줘야지: <code>show()</code></h3>
+                    <p class="card-text" style="margin-bottom: 20px;">
+                        컴퓨터 메모리 속에서 화가가 열심히 그림을 완성했습니다. 하지만 짠! 하고 모니터 화면에 전시하려면 마지막에 꼭 <strong>"이제 보여줘!"</strong>라는 명령을 내려야 합니다.
+                    </p>
+                    <div class="code-box">
+                        <span class="code-comment"># plt(화가야) .show(지금까지 그린 그림을 화면에 띄워!)</span>
+                        <span class="code-line">plt.show()</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             WEEK 6 CONTENT (고급 시각화)
+        =========================================== -->
+        <section id="week6" class="week-section">
+            <div class="section-header">
+                <h2>6주차. 나만의 데이터 전시회 열기</h2>
+                <p>단순한 스케치를 넘어, 커다란 도화지를 반으로 나누고 여러 액자를 거는 고급 전시 기법을 배웁니다.</p>
+            </div>
+
+            <div class="analogy-box">
+                <i class="fa-solid fa-lightbulb" style="color: var(--primary-accent); margin-right: 10px;"></i>
+                5주차에서는 화가(plt)에게 무작정 "그려!"라고 명령했다면, 6주차 <strong>객체지향 API</strong> 방식에서는 우리가 직접 갤러리 관장이 됩니다. <strong class="highlight">도화지(Figure)</strong>를 직접 사고, 그 위에 여러 개의 <strong class="highlight">액자(Axes)</strong>를 우리 마음대로 배치하는 세밀한 작업입니다.
+            </div>
+
+            <div class="wide-card" style="margin-bottom: 25px;">
+                <div class="wide-card-content">
+                    <h3 class="card-title">도화지와 액자: <code>subplots()</code></h3>
+                    <p class="card-text" style="margin-bottom: 20px;">
+                        "큰 벽면(Figure) 하나를 준비하고, 거기에 액자(Axes) 두 개를 가로로 나란히 걸어줘!" 라고 명령하는 방법입니다. 이제 액자 1번에는 선 그래프를, 액자 2번에는 막대 그래프를 각각 따로따로 그릴 수 있게 됩니다.
+                    </p>
+                    <div class="code-box">
+                        <span class="code-comment"># 큰 도화지(fig)와 액자들(axs)을 한 번에 세팅해줘</span>
+                        <span class="code-line">fig, axs = plt.subplots(1, 2)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-grid">
+                <!-- Scatter Plot -->
+                <div class="card">
+                    <div class="card-icon"><i class="fa-solid fa-braille"></i></div>
+                    <h3 class="card-title">산점도 (scatter)</h3>
+                    <p class="card-text">
+                        밤하늘에 별을 찍듯 점을 콕콕 찍는 그래프입니다. 소설의 <strong>'인물 관계도'</strong>와 비슷하죠. '책의 페이지 수'와 '대출 횟수' 사이에 어떤 은밀한 관계(두꺼운 책일수록 안 빌려갈까?)가 있는지 알아볼 때 점들이 찍힌 모양을 보며 추리해 냅니다.
+                    </p>
+                </div>
+
+                <!-- Histogram -->
+                <div class="card green">
+                    <div class="card-icon"><i class="fa-solid fa-chart-column"></i></div>
+                    <h3 class="card-title">히스토그램 (hist)</h3>
+                    <p class="card-text">
+                        막대그래프와 닮았지만 다릅니다. 히스토그램은 <strong>'도수분포표'</strong>를 시각화한 것입니다. 대출 건수가 '0~10번인 책은 몇 권, 11~20번인 책은 몇 권' 이런 식으로 구간을 나누어 데이터가 어디에 뚱뚱하게 몰려있는지(분포)를 보여주는 엑스레이 같은 그래프입니다.
+                    </p>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 40px; padding: 20px; background-color: rgba(216, 67, 21, 0.1); border-radius: 12px; color: var(--primary-accent); font-weight: bold;">
+                <i class="fa-solid fa-award" style="font-size: 24px; margin-bottom: 10px; display: block;"></i>
+                축하합니다! 이제 당신은 데이터를 요약하고, 아름다운 그림으로 번역할 수 있는 통역가가 되었습니다.
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Tab switching logic
+        function switchTab(tabId) {
+            // Update navigation styles
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+
+            // Hide all sections and show target section
+            document.querySelectorAll('.week-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(tabId).classList.add('active');
+        }
+    </script>
+</body>
+</html>
+
+```
