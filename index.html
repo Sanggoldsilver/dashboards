@@ -75,7 +75,7 @@
                         // iframe 로드 및 표시
                         welcome.classList.add('hidden');
                         viewer.classList.remove('hidden');
-                        viewer.src = file.download_url;
+                        viewer.src = file.path; // 이렇게 바꾸면 웹사이트 주소로 연결됩니다.
                     };
 
                     menuContainer.appendChild(btn);
