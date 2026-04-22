@@ -26,31 +26,61 @@
 </head>
 <body class="bg-gray-50 flex h-screen overflow-hidden">
 
-    <aside class="w-64 bg-white border-r border-gray-200 shadow-sm flex flex-col h-full z-10">
-        <div class="p-5 border-b border-gray-200">
-            <h1 class="text-xl font-black text-teal-800">📊 관리 센터</h1>
-        </div>
+    <div id="sidebar-container" class="relative z-20 h-full transition-all duration-300 w-64 flex-shrink-0 bg-white">
         
-        <nav id="tab-menu" class="flex-grow overflow-y-auto p-4 flex flex-col gap-2">
-            <span class="text-gray-400 text-sm">목록 불러오는 중...</span>
-        </nav>
-    </aside>
+        <button onclick="toggleSidebar()" class="absolute -right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-white border border-gray-300 rounded-full shadow-sm flex items-center justify-center text-xs text-gray-500 hover:text-teal-700 hover:border-teal-700 z-50 focus:outline-none transition-colors">
+            <span id="toggle-icon">◀</span>
+        </button>
 
-    <main class="flex-grow flex flex-col h-full relative">
+        <div id="sidebar-inner" class="w-full h-full overflow-hidden border-r border-gray-200">
+            <div class="w-64 h-full flex flex-col">
+                <div class="p-5 border-b border-gray-200 flex-shrink-0">
+                    <h1 class="text-xl font-black text-teal-800 whitespace-nowrap">📊 관리 센터</h1>
+                </div>
+                
+                <nav id="tab-menu" class="flex-grow overflow-y-auto p-4 flex flex-col gap-2">
+                    <span class="text-gray-400 text-sm whitespace-nowrap">목록 불러오는 중...</span>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <main class="flex-grow flex flex-col h-full relative z-10 bg-gray-50">
         <div id="welcome-message" class="flex flex-col items-center justify-center h-full text-gray-500">
             <p class="text-5xl mb-4">📂</p>
             <p class="text-lg">좌측 메뉴에서 분석 리포트를 선택해주세요.</p>
             <p class="text-sm mt-2 text-gray-400">파일명에 언더바(_)를 넣으면 자동으로 그룹이 지어집니다.</p>
             <p class="text-sm text-gray-400">예시: 마케팅_1분기리포트.html</p>
         </div>
-        <iframe id="viewer" class="hidden w-full h-full border-none"></iframe>
+        <iframe id="viewer" class="hidden w-full h-full border-none bg-white"></iframe>
     </main>
 
     <script>
-        // 1. 본인의 정보로 수정해주세요
+        // 본인의 정보로 수정해주세요
         const USERNAME = 'Sanggoldsilver'; 
         const REPO = 'dashboards';
         const PATH = 'dashboards'; 
+
+        // 사이드바 토글 기능 추가
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar-container');
+            const inner = document.getElementById('sidebar-inner');
+            const icon = document.getElementById('toggle-icon');
+            
+            if (sidebar.classList.contains('w-64')) {
+                // 접기
+                sidebar.classList.remove('w-64');
+                sidebar.classList.add('w-0');
+                inner.classList.remove('border-r');
+                icon.innerText = '▶';
+            } else {
+                // 펴기
+                sidebar.classList.remove('w-0');
+                sidebar.classList.add('w-64');
+                inner.classList.add('border-r');
+                icon.innerText = '◀';
+            }
+        }
 
         async function fetchDashboards() {
             const menuContainer = document.getElementById('tab-menu');
@@ -71,7 +101,6 @@
                     return;
                 }
 
-                // 2. 그룹화 로직 (파일명 기준: 그룹명_파일명.html)
                 const groupedFiles = {};
                 
                 htmlFiles.forEach(file => {
@@ -90,14 +119,13 @@
                     groupedFiles[groupName].push({ name: displayName, path: file.path });
                 });
 
-                // 3. 메뉴 렌더링
                 for (const [group, items] of Object.entries(groupedFiles)) {
                     const details = document.createElement('details');
                     details.className = 'group';
-                    details.open = true; // 탭을 기본으로 펼쳐두려면 이 줄을 유지하세요
+                    details.open = true; 
 
                     const summary = document.createElement('summary');
-                    summary.className = 'cursor-pointer font-bold text-gray-700 py-2 px-3 bg-gray-100 rounded-lg hover:bg-gray-200 transition flex justify-between items-center';
+                    summary.className = 'cursor-pointer font-bold text-gray-700 py-2 px-3 bg-gray-100 rounded-lg hover:bg-gray-200 transition flex justify-between items-center whitespace-nowrap';
                     summary.innerHTML = `${group} <span class="arrow transition-transform duration-200 text-xs">▼</span>`;
 
                     const itemContainer = document.createElement('div');
@@ -105,22 +133,20 @@
 
                     items.forEach(item => {
                         const btn = document.createElement('button');
-                        btn.className = 'text-left px-3 py-2 rounded-md text-gray-500 hover:bg-teal-50 hover:text-teal-700 transition tab-btn text-sm';
+                        btn.className = 'text-left px-3 py-2 rounded-md text-gray-500 hover:bg-teal-50 hover:text-teal-700 transition tab-btn text-sm whitespace-nowrap truncate overflow-hidden';
                         btn.innerText = item.name;
+                        btn.title = item.name;
 
                         btn.onclick = () => {
-                            // 모든 버튼 스타일 초기화
                             document.querySelectorAll('.tab-btn').forEach(b => {
                                 b.classList.remove('bg-teal-700', 'text-white', 'font-bold');
                                 b.classList.add('text-gray-500');
                                 b.classList.remove('hover:text-teal-700');
                             });
                             
-                            // 클릭한 버튼 스타일 적용
                             btn.classList.remove('text-gray-500');
                             btn.classList.add('bg-teal-700', 'text-white', 'font-bold');
 
-                            // 화면 표시
                             welcome.classList.add('hidden');
                             viewer.classList.remove('hidden');
                             viewer.src = item.path; 
@@ -136,7 +162,7 @@
 
             } catch (error) {
                 console.error('Error:', error);
-                menuContainer.innerHTML = `<span class="text-red-500 text-sm">${error.message}</span>`;
+                menuContainer.innerHTML = `<span class="text-red-500 text-sm whitespace-nowrap">${error.message}</span>`;
             }
         }
 
