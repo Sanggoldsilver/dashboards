@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>고용관계론 취약점 심층 공략 + AI Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f1f5f9; color: #1e293b; }
+        .topic-section { background: white; border-radius: 1.5rem; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); margin-bottom: 2.5rem; }
+        .section-header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 1.5rem 2rem; }
+        .logic-box { background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 1rem; margin: 1rem 0; }
+        .comparison-table th { background-color: #f8fafc; color: #475569; font-weight: 600; padding: 0.75rem; border-bottom: 2px solid #e2e8f0; }
+        .comparison-table td { padding: 0.75rem; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
+        .pro-tip { border: 1px dashed #10b981; background-color: #ecfdf5; color: #065f46; padding: 1rem; border-radius: 0.75rem; }
+        
+        /* AI Chat UI */
+        #ai-sidebar { transition: transform 0.3s ease-in-out; }
+        .loader { border-top-color: #3b82f6; animation: spinner 1.5s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="py-10 px-4 md:px-12 pb-32">
+
+    <div class="max-w-5xl mx-auto">
+        <!-- Main Header -->
+        <div class="text-center mb-12">
+            <span class="bg-blue-100 text-blue-700 px-4 py-1 rounded-full text-sm font-bold uppercase tracking-wider">Mid-term Deep Dive</span>
+            <h1 class="text-4xl font-extrabold mt-3 tracking-tight text-slate-900">취약점 집중 공략 대시보드 ✨</h1>
+            <p class="text-slate-500 mt-4 text-lg">강의자료 기반 세부 논리 분석 및 Gemini AI 학습 지원</p>
+        </div>
+
+        <!-- Topic 1: Economic Effects -->
+        <section class="topic-section">
+            <div class="section-header flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <span class="bg-white/20 p-2 rounded-lg text-xl">📊</span>
+                    <h2 class="text-2xl font-bold">노동조합의 경제적 효과 (2주차)</h2>
+                </div>
+                <button onclick="askAI('노동조합의 전이효과와 위협효과를 암기하기 쉬운 사례와 함께 더 자세히 설명해줘')" class="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg text-sm transition-colors">✨ 더 알아보기</button>
+            </div>
+            <div class="p-8">
+                <h3 class="text-xl font-bold text-blue-700 mb-4">1. 전이 효과 vs 위협 효과 (핵심 비교)</h3>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-100">
+                        <h4 class="font-bold text-red-600 mb-3 flex items-center gap-2">🔴 전이 효과 (Spillover Effect)</h4>
+                        <div class="text-sm space-y-2">
+                            <p><strong>발생 경로:</strong> 노조 부문 임금 상승 → 해고된 노동자가 비노조 시장으로 이동 → <strong>비노조 임금 하락</strong></p>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-100">
+                        <h4 class="font-bold text-blue-600 mb-3 flex items-center gap-2">🔵 위협 효과 (Threat Effect)</h4>
+                        <div class="text-sm space-y-2">
+                            <p><strong>발생 경로:</strong> 노조 설립 우려 → 사용자가 선제적으로 임금 인상 → <strong>비노조 임금 상승</strong></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="logic-box mt-6">
+                    <p class="text-sm text-blue-700">전이 효과는 격차를 <strong>확대</strong>하고, 위협 효과는 격차를 <strong>축소</strong>합니다.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Topic 2: International ER -->
+        <section class="topic-section">
+            <div class="section-header flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <span class="bg-white/20 p-2 rounded-lg text-xl">🌍</span>
+                    <h2 class="text-2xl font-bold">해외 노사관계 시스템 (3주차)</h2>
+                </div>
+                <button onclick="askAI('독일의 공동결정제와 미국의 직무규제 조합주의를 비교하는 중간고사 예상 문제를 3개만 만들어줘')" class="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg text-sm transition-colors">✨ 퀴즈 생성</button>
+            </div>
+            <div class="p-8">
+                <h3 class="text-xl font-bold text-slate-800 mb-4">🇩🇪 독일: 공동결정제 (Co-determination)</h3>
+                <table class="w-full comparison-table text-left mb-8">
+                    <thead>
+                        <tr>
+                            <th class="w-1/2 text-blue-600">감독이사회 (감시)</th>
+                            <th class="w-1/2 text-red-600">경영이사회 (집행)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>주주 + 근로자 대표 (경영진 선임)</td>
+                            <td>실질적 운영 (감독이사회에 보고)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <h3 class="text-xl font-bold text-slate-800 mb-4">🇺🇸 미국: 직무규제 조합주의 (Job-control)</h3>
+                <div class="bg-amber-50 p-4 rounded-lg">
+                    <p class="text-sm font-bold text-amber-800">📌 현대 환경에서 왜 쇠퇴하는가?</p>
+                    <p class="text-xs text-amber-700 mt-1">엄격한 직무 경계로 인한 <strong>유연성 부족</strong> 및 관리 비용 상승이 주된 원인입니다.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Topic 3: Bargaining -->
+        <section class="topic-section">
+            <div class="section-header flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <span class="bg-white/20 p-2 rounded-lg text-xl">📜</span>
+                    <h2 class="text-2xl font-bold">단체교섭 유형 및 법적 숫자 (5-6주차)</h2>
+                </div>
+                <button onclick="askAI('단체협약 유효기간 3년, 규약의결 2/3 등 법적 숫자들을 쉽게 외울 수 있는 암기 문장을 만들어줘')" class="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg text-sm transition-colors">✨ 암기팁 받기</button>
+            </div>
+            <div class="p-8">
+                <div class="grid md:grid-cols-3 gap-4 mb-6">
+                    <div class="p-4 bg-slate-50 rounded-lg text-sm font-bold text-center">패턴: 릴레이 방식</div>
+                    <div class="p-4 bg-slate-50 rounded-lg text-sm font-bold text-center">대각선: 상급 vs 개별</div>
+                    <div class="p-4 bg-slate-50 rounded-lg text-sm font-bold text-center">통일: 산별 vs 단체</div>
+                </div>
+                <div class="pro-tip">
+                    <p class="font-bold mb-2 font-sm">🎯 필수 암기 수치</p>
+                    <ul class="text-xs space-y-2">
+                        <li>협약 유효기간: 최대 <span class="text-red-600 font-bold">3년</span> (최신 개정)</li>
+                        <li>특별 의결(해산 등): 재적 과반수 출석 + <span class="text-red-600 font-bold">출석 2/3 찬성</span></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- AI Assistant Status Bar -->
+        <div id="ai-assistant" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-[90%] max-w-2xl bg-white border border-blue-200 shadow-2xl rounded-2xl p-4 z-50 hidden">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-sm font-bold text-blue-600 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></span> Gemini AI 학습 비서
+                </span>
+                <button onclick="closeAI()" class="text-slate-400 hover:text-slate-600">&times;</button>
+            </div>
+            <div id="ai-response-container" class="max-h-60 overflow-y-auto text-sm text-slate-700 leading-relaxed bg-slate-50 p-3 rounded-lg mb-3">
+                <!-- AI Response will appear here -->
+                <div id="ai-loader" class="flex justify-center py-4 hidden">
+                    <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-8 w-8"></div>
+                </div>
+                <div id="ai-content"></div>
+            </div>
+            <div class="flex gap-2">
+                <input type="text" id="ai-input" placeholder="질문을 입력하세요..." class="flex-1 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-500">
+                <button onclick="handleManualAsk()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors">✨ 질문</button>
+            </div>
+        </div>
+
+        <!-- Floating AI Trigger -->
+        <button onclick="toggleAI()" class="fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-all z-40 flex items-center gap-2 group">
+            <span class="hidden group-hover:inline text-sm font-bold pr-1">교수님께 질문하기</span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
+        </button>
+    </div>
+
+    <script>
+        const apiKey = ""; // Runtime provided
+        const systemPrompt = `당신은 고용관계론(Employment Relations) 전문 교수님입니다. 
+        상명대학교 학생의 중간고사 대비를 돕고 있습니다. 
+        제시된 대시보드의 내용(1~6주차: 고용관계 시각, 노조 유형, 경제적 효과, 국가별 모델, 단체교섭 등)을 바탕으로 친절하고 명쾌하게 설명해 주세요. 
+        어려운 개념은 비유를 들어 설명하고, 중요한 포인트는 강조해 주세요.`;
+
+        async function callGemini(userPrompt) {
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: userPrompt }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] }
+            };
+
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await response.json();
+                    if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                        return data.candidates[0].content.parts[0].text;
+                    }
+                } catch (e) {
+                    const delay = Math.pow(2, i) * 1000;
+                    await new Promise(res => setTimeout(res, delay));
+                }
+            }
+            throw new Error("AI 응답을 가져오지 못했습니다.");
+        }
+
+        const aiAssistant = document.getElementById('ai-assistant');
+        const aiLoader = document.getElementById('ai-loader');
+        const aiContent = document.getElementById('ai-content');
+        const aiInput = document.getElementById('ai-input');
+
+        function toggleAI() {
+            aiAssistant.classList.toggle('hidden');
+        }
+
+        function closeAI() {
+            aiAssistant.classList.add('hidden');
+        }
+
+        async function askAI(prompt) {
+            aiAssistant.classList.remove('hidden');
+            aiContent.innerText = "";
+            aiLoader.classList.remove('hidden');
+            
+            try {
+                const response = await callGemini(prompt);
+                aiContent.innerText = response;
+            } catch (err) {
+                aiContent.innerHTML = `<span class="text-red-500">오류: ${err.message}</span>`;
+            } finally {
+                aiLoader.classList.add('hidden');
+            }
+        }
+
+        function handleManualAsk() {
+            const val = aiInput.value.trim();
+            if (val) {
+                askAI(val);
+                aiInput.value = "";
+            }
+        }
+
+        // Enter key support
+        aiInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleManualAsk();
+        });
+    </script>
+
+</body>
+</html>
