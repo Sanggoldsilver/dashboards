@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>공간통계학 및 기초 통계 완벽 가이드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Typography & Custom Colors */
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #F9F8F6; /* Warm Neutral Background */
+            color: #334155;
+        }
+
+        /* Chart Container Styling - MANDATORY */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 250px;
+            }
+        }
+
+        /* Custom scrollbar for better UX */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Interactive Element Styles */
+        .tab-btn.active {
+            border-bottom: 2px solid #2563EB;
+            color: #2563EB;
+            font-weight: 600;
+        }
+        .concept-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .formula-box {
+            background-color: #f8fafc;
+            border-left: 4px solid #3b82f6;
+            padding: 1rem;
+            margin-top: 0.5rem;
+            border-radius: 0 0.5rem 0.5rem 0;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: 600;
+            color: #1e293b;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+
+<!-- Chosen Palette: Warm Neutrals with Blue/Teal Accents (#F9F8F6 background, #FFFFFF cards, #334155 text, #2563EB primary accent, #0D9488 secondary accent) -->
+
+<!-- Application Structure Plan: 
+This SPA is designed as an interactive learning dashboard. It is structured into three main thematic tabs:
+1. "기초 통계 (Basic Stats)": Establishes the mathematical foundation required for advanced concepts. Includes interactive visualizations (Normal Distribution).
+2. "공간 통계 기초 (Spatial Stats)": Introduces spatial concepts, weights, and regression models in a logical progression. Uses interactive accordions to manage complex information.
+3. "모델 검증 및 실무 (Validation & Practice)": Covers the critical "how-to" and troubleshooting aspects, including AI prompting guides.
+This tabbed structure prevents cognitive overload, allowing users to focus on one learning module at a time. The flow moves from general stats -> spatial theory -> practical application. -->
+
+<!-- Visualization & Content Choices: 
+- Normal Distribution (Chart.js): Goal: Visualize Z-scores and distributions. Method: Line chart with filled area. Justification: Visualizing the bell curve is crucial for understanding standard deviations and probabilities. 
+- Concept Cards (HTML/CSS): Goal: Organize definitions (Variance, Variables, etc.). Method: CSS Grid layout with hover effects. Justification: Chunks information into digestible blocks.
+- Interactive Model Selector (HTML/JS): Goal: Guide users through regression models (OLS -> SLM/SEM). Method: Clickable buttons revealing specific advice. Justification: Simulates the decision-making process in spatial analysis.
+- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. All visual structures are HTML/CSS or Canvas (Chart.js). -->
+
+    <!-- Header & Navigation -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center py-4">
+                <div class="flex items-center mb-4 md:mb-0">
+                    <span class="text-3xl mr-2">🗺️</span>
+                    <h1 class="text-2xl font-bold text-slate-800">공간통계학 핵심 마스터</h1>
+                </div>
+                <nav class="flex space-x-1 overflow-x-auto w-full md:w-auto pb-2 md:pb-0">
+                    <button onclick="switchTab('basic')" id="tab-basic" class="tab-btn active px-4 py-2 text-sm font-medium text-slate-600 whitespace-nowrap transition-colors">1. 통계학 기초</button>
+                    <button onclick="switchTab('spatial')" id="tab-spatial" class="tab-btn px-4 py-2 text-sm font-medium text-slate-600 whitespace-nowrap transition-colors">2. 공간통계학 입문</button>
+                    <button onclick="switchTab('validation')" id="tab-validation" class="tab-btn px-4 py-2 text-sm font-medium text-slate-600 whitespace-nowrap transition-colors">3. 모델 검증 및 실무</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+
+        <!-- TAB 1: 기초 통계 -->
+        <section id="content-basic" class="block animate-fade-in">
+            <div class="mb-8 text-center md:text-left">
+                <h2 class="text-3xl font-bold text-slate-800 mb-2">통계학 기초 상식</h2>
+                <p class="text-slate-600 text-lg">공간 분석을 시작하기 전, 반드시 알아야 할 데이터의 분포와 가설 검정의 기초 개념입니다.</p>
+            </div>
+
+            <!-- Concept Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <div class="concept-card bg-white p-6 rounded-xl shadow-sm border border-slate-100 transition-all">
+                    <h3 class="text-xl font-bold text-blue-600 mb-2">분산 (Variance)</h3>
+                    <p class="text-sm text-slate-600 mb-2">데이터가 평균으로부터 얼마나 퍼져 있는지를 나타내는 지표. 편차의 제곱의 평균입니다.</p>
+                    <div class="formula-box">σ² = Σ(X - μ)² / N</div>
+                </div>
+                <div class="concept-card bg-white p-6 rounded-xl shadow-sm border border-slate-100 transition-all">
+                    <h3 class="text-xl font-bold text-blue-600 mb-2">표준편차 (Standard Deviation)</h3>
+                    <p class="text-sm text-slate-600 mb-2">분산의 양의 제곱근. 데이터가 평균을 중심으로 얼마나 퍼져 있는지를 원래 단위로 보여줍니다.</p>
+                    <div class="formula-box">σ = √Variance</div>
+                </div>
+                <div class="concept-card bg-white p-6 rounded-xl shadow-sm border border-slate-100 transition-all">
+                    <h3 class="text-xl font-bold text-blue-600 mb-2">Z-스코어 (Z-Score)</h3>
+                    <p class="text-sm text-slate-600 mb-2">어떤 데이터가 평균으로부터 표준편차의 몇 배만큼 떨어져 있는지를 나타내는 표준화 지수입니다.</p>
+                    <div class="formula-box">Z = (X - μ) / σ</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <!-- Hypothesis Testing -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                    <h3 class="text-2xl font-bold text-slate-800 mb-4">가설 검정의 기초</h3>
+                    <div class="space-y-4">
+                        <div class="p-4 bg-slate-50 rounded-lg">
+                            <h4 class="font-bold text-teal-700 flex items-center mb-1">
+                                <span class="mr-2">⚖️</span> T-검정 (T-Test)
+                            </h4>
+                            <p class="text-sm text-slate-700">두 집단 간의 <strong>평균 차이</strong>가 통계적으로 유의미한지 검증할 때 사용합니다. (예: 서울과 부산의 평균 집값 차이 비교)</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-lg">
+                            <h4 class="font-bold text-teal-700 flex items-center mb-1">
+                                <span class="mr-2">📈</span> F-검정 (F-Test)
+                            </h4>
+                            <p class="text-sm text-slate-700">두 집단 간의 <strong>분산 차이</strong>가 유의미한지, 혹은 다중회귀분석에서 모델 전체의 설명력이 유의미한지 검증할 때 사용합니다.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Normal Distribution Chart -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-center">
+                    <h3 class="text-2xl font-bold text-slate-800 mb-2">정규분포 (Normal Distribution)</h3>
+                    <p class="text-sm text-slate-600 mb-4">자연계와 사회 현상에서 가장 흔하게 나타나는 종 모양의 데이터 분포입니다. 통계적 추론의 근간이 됩니다.</p>
+                    <div class="chart-container">
+                        <canvas id="normalDistChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QGIS & GeoDa Normalization -->
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 md:p-8 rounded-xl shadow-sm border border-blue-100">
+                <h3 class="text-2xl font-bold text-slate-800 mb-4">QGIS/GeoDa 수치 정규화 (Normalization)</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-bold text-blue-800 mb-2">❓ 왜 정규화를 해야 할까?</h4>
+                        <ul class="list-disc list-inside text-sm text-slate-700 space-y-2">
+                            <li><strong>단위 통일:</strong> 면적(m²), 인구(명), 금액(원) 등 서로 다른 단위의 변수들을 동일한 척도로 비교하기 위해.</li>
+                            <li><strong>면적의 영향 제거:</strong> 공간 단위(행정동 등)의 크기가 다를 경우, 단순 총량(예: 총 범죄 건수)을 비교하면 면적이 큰 곳이 무조건 높게 나타나는 오류가 발생합니다. 인구당, 면적당 비율로 변환해야 합니다.</li>
+                            <li><strong>모델 안정성:</strong> 회귀분석 시 변수 값의 스케일 차이가 크면 계산 과정에서 왜곡이 발생할 수 있습니다.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-blue-800 mb-2">🛠️ GeoDa에서의 사용 방법</h4>
+                        <ol class="list-decimal list-inside text-sm text-slate-700 space-y-2">
+                            <li>데이터 테이블 열기 (Table).</li>
+                            <li>새로운 변수 추가 (Add Variable).</li>
+                            <li>Calculator(계산기) 실행.</li>
+                            <li><strong>스탠다드화(Standardize):</strong> (변수 - 평균) / 표준편차 수식을 적용하여 Z-score 형태로 변환. (GeoDa 내장 함수 이용 가능)</li>
+                            <li><strong>비율 계산:</strong> Rate 탭을 이용하여 이벤트 수(Event) / 기준 인구(Base) 형태의 비율 변수를 직접 생성할 수 있습니다.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: 공간 통계 기초 -->
+        <section id="content-spatial" class="hidden animate-fade-in">
+            <div class="mb-8 text-center md:text-left">
+                <h2 class="text-3xl font-bold text-slate-800 mb-2">공간통계학 입문</h2>
+                <p class="text-slate-600 text-lg">데이터가 가진 '위치' 정보가 미치는 영향을 수학적 모델로 풀어내는 방법론을 학습합니다.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                <!-- Basic Concepts -->
+                <div class="lg:col-span-1 space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <h3 class="text-xl font-bold text-slate-800 mb-3">📍 공간통계학이란?</h3>
+                        <p class="text-sm text-slate-700 mb-4">
+                            "모든 것은 다른 모든 것과 관련되어 있지만, 가까운 것은 먼 것보다 더 관련되어 있다." (Tobler의 지리학 제1법칙).<br><br>
+                            일반 통계학과 달리, 데이터의 <strong>지리적 위치와 이웃 관계(공간적 자기상관성)</strong>를 분석에 직접 포함시키는 학문입니다.
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <h3 class="text-xl font-bold text-slate-800 mb-3">변수의 이해</h3>
+                        <div class="space-y-3">
+                            <div class="border-l-4 border-blue-500 pl-3">
+                                <h4 class="font-bold text-sm text-slate-800">종속변수 (Dependent Variable, Y)</h4>
+                                <p class="text-xs text-slate-600">우리가 원인을 알고 싶어 하거나 예측하고자 하는 결과값 (예: 집값, 범죄율)</p>
+                            </div>
+                            <div class="border-l-4 border-teal-500 pl-3">
+                                <h4 class="font-bold text-sm text-slate-800">독립변수 (Independent Variable, X)</h4>
+                                <p class="text-xs text-slate-600">종속변수에 영향을 미칠 것으로 예상되는 원인값들 (예: 지하철역 거리, 공원 면적)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <h3 class="text-xl font-bold text-slate-800 mb-3">공간 가중치 (Spatial Weights)</h3>
+                        <p class="text-xs text-slate-600 mb-3">어느 지역이 서로 '이웃'인지 정의하는 행렬(W) 설정 방법</p>
+                        <ul class="text-sm text-slate-700 space-y-2">
+                            <li><span class="font-bold text-blue-600">인접성 (Contiguity):</span> 경계선이 닿아있으면 이웃. (Rook: 변 공유, Queen: 점/변 공유)</li>
+                            <li><span class="font-bold text-blue-600">거리 (Distance):</span> 중심점 간의 거리가 특정 반경(Band) 내에 있으면 이웃, 혹은 거리에 반비례하여 가중치 부여.</li>
+                            <li><span class="font-bold text-blue-600">K-최근린 (K-Nearest):</span> 거리에 상관없이 가장 가까운 K개의 지역을 이웃으로 설정.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Regression Models Flow -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                    <h3 class="text-2xl font-bold text-slate-800 mb-4">회귀분석 모델 발전 과정</h3>
+                    <p class="text-sm text-slate-600 mb-6">회귀분석은 독립변수(들)가 종속변수에 미치는 영향을 선형 방정식으로 추정하는 기법입니다. 공간 효과를 어떻게 처리하느냐에 따라 모델이 진화합니다.</p>
+                    
+                    <div class="relative border-l-2 border-slate-200 ml-4 space-y-8 pb-4">
+                        
+                        <!-- OLS -->
+                        <div class="relative pl-6">
+                            <div class="absolute w-4 h-4 bg-blue-500 rounded-full -left-[9px] top-1"></div>
+                            <h4 class="text-lg font-bold text-slate-800">1. 다중회귀분석 & OLS (최소제곱법)</h4>
+                            <p class="text-sm font-semibold text-blue-600 mb-1">식: Y = β₀ + β₁X₁ + β₂X₂ + ... + ε</p>
+                            <p class="text-sm text-slate-700">여러 개의 독립변수를 사용하여 종속변수를 설명하는 가장 기본적인 선형 모델. '공간적 영향'은 전혀 고려하지 않습니다. 잔차(오차)의 제곱합을 최소화하는 방식으로 계수를 찾습니다.</p>
+                        </div>
+
+                        <!-- SLM / SEM -->
+                        <div class="relative pl-6">
+                            <div class="absolute w-4 h-4 bg-teal-500 rounded-full -left-[9px] top-1"></div>
+                            <h4 class="text-lg font-bold text-slate-800">2. 공간 자기회귀 모델 (SLM / SEM)</h4>
+                            <p class="text-sm text-slate-700 mb-2">OLS의 잔차에 공간적 패턴이 남아있을 때(공간 자기상관성 존재 시) 이를 모델에 포함시킵니다.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                                <div class="bg-teal-50 p-3 rounded text-sm">
+                                    <span class="font-bold">SLM (공간시차모델)</span><br>
+                                    식: Y = ρWY + Xβ + ε<br>
+                                    "내 결과(집값)는 이웃의 결과(이웃 집값)에 직접적인 영향을 받는다."
+                                </div>
+                                <div class="bg-teal-50 p-3 rounded text-sm">
+                                    <span class="font-bold">SEM (공간오차모델)</span><br>
+                                    식: Y = Xβ + u, u = λWu + ε<br>
+                                    "모델에 포함되지 않은 숨겨진 요인(오차)들이 공간적으로 뭉쳐서 영향을 미친다."
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- GWR -->
+                        <div class="relative pl-6">
+                            <div class="absolute w-4 h-4 bg-purple-500 rounded-full -left-[9px] top-1"></div>
+                            <h4 class="text-lg font-bold text-slate-800">3. 지리적 가중회귀분석 (GWR)</h4>
+                            <p class="text-sm font-semibold text-purple-600 mb-1">식: Yᵢ = β₀(uᵢ, vᵢ) + Σβₖ(uᵢ, vᵢ)Xᵢₖ + εᵢ</p>
+                            <p class="text-sm text-slate-700">전역적(Global) 모델인 앞선 모델들과 달리, <strong>지역적(Local) 모델</strong>입니다. 변수 간의 관계가 공간에 따라 일정하지 않다는 '공간적 이질성(Spatial Heterogeneity)'을 가정합니다. 각 지역마다 다른 회귀 계수(β)가 산출됩니다.</p>
+                        </div>
+
+                        <!-- Other Models -->
+                        <div class="relative pl-6">
+                            <div class="absolute w-4 h-4 bg-slate-400 rounded-full -left-[9px] top-1"></div>
+                            <h4 class="text-lg font-bold text-slate-800">4. 기타 고급 모델</h4>
+                            <p class="text-sm text-slate-700">
+                                <strong>SDM (공간더빈모델):</strong> 내 결과가 이웃의 종속변수뿐만 아니라 이웃의 '독립변수'에도 영향을 받음을 가정한 복합 모델.<br>
+                                <strong>패널 공간회귀 (Panel Spatial Regression):</strong> 시간적 변화와 공간적 상호작용을 동시에 고려하는 시공간 분석 모델.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: 심화 및 검증 -->
+        <section id="content-validation" class="hidden animate-fade-in">
+            <div class="mb-8 text-center md:text-left">
+                <h2 class="text-3xl font-bold text-slate-800 mb-2">모델 검증 및 실무 가이드</h2>
+                <p class="text-slate-600 text-lg">분석을 돌리는 것보다 중요한 것은 결과를 해석하고 오류를 찾아 해결하는 과정입니다.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <!-- Troubleshooting -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col">
+                    <h3 class="text-2xl font-bold text-slate-800 mb-4 flex items-center"><span class="text-red-500 mr-2">🚨</span> 분석 시 발생하는 주요 문제 및 해결법</h3>
+                    
+                    <div class="space-y-6 flex-grow">
+                        <!-- Multicollinearity -->
+                        <div>
+                            <h4 class="text-lg font-bold text-slate-800 border-b border-slate-200 pb-1 mb-2">1. 다중공선성 (Multicollinearity)</h4>
+                            <p class="text-sm text-slate-700 mb-2"><strong>문제:</strong> 독립변수들끼리 너무 높은 상관관계를 가지는 현상. (예: '방의 개수'와 '집의 면적'을 둘 다 독립변수로 넣을 경우). 모델의 계수가 불안정해지고 해석이 불가능해집니다.</p>
+                            <div class="bg-slate-50 p-3 rounded text-sm">
+                                <strong>분석 방법:</strong> VIF (Variance Inflation Factor, 분산팽창지수) 확인.<br>
+                                <span class="text-red-600 font-semibold">판단 기준: VIF > 10 이면 다중공선성 의심.</span><br>
+                                <span class="text-teal-600 font-semibold">해결법:</span> VIF가 높은 변수 중 논리적 덜 중요한 변수를 <strong>제거</strong>하거나, PCA(주성분분석)를 통해 변수를 축소합니다.
+                            </div>
+                        </div>
+
+                        <!-- Residuals -->
+                        <div>
+                            <h4 class="text-lg font-bold text-slate-800 border-b border-slate-200 pb-1 mb-2">2. 잔차 분석 (Residual Analysis)</h4>
+                            <p class="text-sm text-slate-700 mb-2"><strong>문제:</strong> 잔차(실제값 - 예측값)는 무작위로 분포해야 합니다. 특정 패턴(공간적 뭉침)이 남아있다면 OLS 모델이 공간 효과를 잡아내지 못했다는 뜻입니다.</p>
+                            <div class="bg-slate-50 p-3 rounded text-sm">
+                                <strong>분석 방법:</strong> OLS 수행 후 산출된 잔차(Residual) 변수에 대해 <strong>Moran's I (모란지수) 분석</strong> 실행.<br>
+                                <span class="text-red-600 font-semibold">판단 기준:</span> Moran's I p-value가 0.05 미만이면 잔차의 공간 자기상관성 존재.<br>
+                                <span class="text-teal-600 font-semibold">해결법:</span> 단순 OLS를 버리고 <strong>SLM, SEM, GWR 등의 공간 회귀 모델로 전환</strong>해야 합니다.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Process & AI Guide -->
+                <div class="space-y-6 flex flex-col">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex-grow">
+                        <h3 class="text-xl font-bold text-slate-800 mb-4">🔍 OLS -> 모델 선택 과정 (LM TEST)</h3>
+                        <p class="text-sm text-slate-700 mb-4">어떤 공간 모델(SLM vs SEM)을 써야 할지는 마음대로 정하는 것이 아니라 통계적 검정(LM Test)을 거쳐 결정합니다.</p>
+                        
+                        <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 text-sm space-y-2">
+                            <p>1. 먼저 <strong>OLS 분석</strong>을 실행하고 <strong>LM Test(Lagrange Multiplier Test)</strong> 결과를 확인합니다.</p>
+                            <p>2. <strong>LM-Lag</strong> (SLM 테스트)와 <strong>LM-Error</strong> (SEM 테스트)의 유의확률(p-value)을 확인합니다.</p>
+                            <ul class="list-disc list-inside ml-2">
+                                <li>둘 다 안 유의함 -> 그냥 OLS 쓰면 됨.</li>
+                                <li>Lag만 유의함 -> <strong>SLM 선택</strong></li>
+                                <li>Error만 유의함 -> <strong>SEM 선택</strong></li>
+                                <li>둘 다 유의함 -> <strong>Robust LM-Lag</strong>와 <strong>Robust LM-Error</strong> 결과를 비교하여, 값이 더 크고 유의확률이 더 낮은(더 통계적으로 강력한) 모델을 최종 선택합니다.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800 text-white p-6 rounded-xl shadow-sm">
+                        <h3 class="text-xl font-bold mb-3 flex items-center"><span class="mr-2">🤖</span> AI 비서 활용 꿀팁 (ChatGPT / Claude)</h3>
+                        <p class="text-sm text-slate-300 mb-4">GeoDa나 QGIS 결과창을 텍스트로 복사하여 AI에게 해석을 요청하면 학습 속도가 매우 빨라집니다.</p>
+                        <div class="space-y-3">
+                            <div class="bg-slate-700 p-3 rounded border-l-4 border-teal-400">
+                                <p class="text-xs text-teal-300 font-bold mb-1">프롬프트 예시 1 (결과 해석)</p>
+                                <p class="text-sm italic">"다음은 내가 GeoDa에서 돌린 OLS 결과 텍스트야. R-squared 값이 의미하는 바와, p-value를 기준으로 어떤 변수가 유의미한 영향을 미쳤는지 초보자가 이해하기 쉽게 설명해줘. [결과 텍스트 붙여넣기]"</p>
+                            </div>
+                            <div class="bg-slate-700 p-3 rounded border-l-4 border-blue-400">
+                                <p class="text-xs text-blue-300 font-bold mb-1">프롬프트 예시 2 (에러 해결)</p>
+                                <p class="text-sm italic">"다중공선성 분석을 했는데 특정 변수의 VIF 값이 15가 나왔어. 이 상황이 왜 문제가 되고, 내 논문에서 이 변수를 어떻게 처리하는 것이 학술적으로 올바른지 3가지 방안을 제시해줘."</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-800 text-slate-300 py-6 text-center text-sm">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>공간통계학 기초 완벽 가이드 &copy; 2026. Designed for intuitive learning.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- Navigation Logic ---
+        function switchTab(tabId) {
+            // Hide all contents
+            document.querySelectorAll('section[id^="content-"]').forEach(el => {
+                el.classList.add('hidden');
+            });
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('active', 'border-b-2', 'border-blue-600', 'text-blue-600', 'font-semibold');
+                el.classList.add('text-slate-600');
+            });
+
+            // Show selected content
+            document.getElementById('content-' + tabId).classList.remove('hidden');
+            
+            // Highlight selected button
+            const activeBtn = document.getElementById('tab-' + tabId);
+            activeBtn.classList.add('active', 'border-b-2', 'border-blue-600', 'text-blue-600', 'font-semibold');
+            activeBtn.classList.remove('text-slate-600');
+        }
+
+        // --- Chart.js: Normal Distribution Logic ---
+        document.addEventListener('DOMContentLoaded', function() {
+            // Generate data for Normal Distribution Bell Curve
+            const generateNormalDistData = () => {
+                let data = [];
+                let labels = [];
+                const mean = 0;
+                const stdDev = 1;
+                
+                // Generate points from -4 to +4 standard deviations
+                for (let x = -4; x <= 4; x += 0.1) {
+                    const y = (1 / (stdDev * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - mean) / stdDev, 2));
+                    labels.push(x.toFixed(1));
+                    data.push(y);
+                }
+                return { labels, data };
+            };
+
+            const distData = generateNormalDistData();
+
+            const ctx = document.getElementById('normalDistChart').getContext('2d');
+            
+            // Create gradient for the fill
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(37, 99, 235, 0.4)'); // blue-600 with opacity
+            gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)');
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: distData.labels,
+                    datasets: [{
+                        label: '확률 밀도 (Probability Density)',
+                        data: distData.data,
+                        borderColor: '#2563EB', // blue-600
+                        backgroundColor: gradient,
+                        borderWidth: 2,
+                        fill: true,
+                        pointRadius: 0, // hide points for a smooth curve
+                        pointHoverRadius: 6,
+                        tension: 0.4 // smooth curve
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false, // MANDATORY for chart container control
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: (items) => `Z-Score: ${items[0].label}`,
+                                label: () => '정규분포 확률밀도'
+                            }
+                        },
+                        annotation: {
+                            // Can be added via plugin if needed, but skipping for vanilla chart.js simplicity
+                            // Will use grid lines to indicate standard deviations
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Z-Score (표준편차 배수)', font: { size: 12, family: 'Pretendard' } },
+                            grid: { display: false },
+                            ticks: {
+                                callback: function(value, index, values) {
+                                    // Only show integer Z-scores (-3, -2, -1, 0, 1, 2, 3)
+                                    const val = parseFloat(this.getLabelForValue(value));
+                                    if (Number.isInteger(val) && val >= -3 && val <= 3) {
+                                        return val;
+                                    }
+                                    return '';
+                                }
+                            }
+                        },
+                        y: {
+                            display: false, // hide Y axis numbers as they are just relative density
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        });
+
+    </script>
+</body>
+</html>
