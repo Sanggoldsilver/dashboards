@@ -36,21 +36,33 @@
 <body class="bg-slate-50 text-slate-800 flex h-screen overflow-hidden">
 
   <!-- 사이드바 내비게이션 -->
-  <aside class="w-80 bg-slate-900 text-white flex flex-col justify-between h-full border-r border-slate-800 shrink-0">
+  <aside id="sidebar-panel" class="w-80 bg-slate-900 text-white flex flex-col justify-between h-full border-r border-slate-800 shrink-0 transition-all duration-300">
     <div>
-      <!-- 대학 로고 영역 -->
-      <div class="p-6 border-b border-slate-800 flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-extrabold text-sm tracking-tighter">
-          SMU
+      <!-- 대학 로고 영역 및 접기 토글 패널 -->
+      <div class="p-6 border-b border-slate-800 flex flex-col items-center justify-center space-y-3 relative" id="sidebar-brand-container">
+        <div class="flex items-center space-x-3 w-full justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-extrabold text-sm tracking-tighter shrink-0 shadow-lg shadow-blue-900/30">
+              SMU
+            </div>
+            <div class="sidebar-text transition-all duration-300">
+              <h1 class="text-base font-bold tracking-tight whitespace-nowrap">생산운영관리</h1>
+              <p class="text-xs text-slate-400 whitespace-nowrap">Sangmyung University</p>
+            </div>
+          </div>
+          <!-- 접기 버튼 (활성화 상태) -->
+          <button onclick="toggleSidebar()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-all sidebar-text">
+            <i data-lucide="chevron-left" class="w-5 h-5"></i>
+          </button>
         </div>
-        <div>
-          <h1 class="text-base font-bold tracking-tight">생산운영관리</h1>
-          <p class="text-xs text-slate-400">Sangmyung University</p>
-        </div>
+        <!-- 펼치기 버튼 (접힌 상태에서만 표시) -->
+        <button onclick="toggleSidebar()" id="sidebar-toggle-collapsed" class="hidden text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-all">
+          <i data-lucide="chevron-right" class="w-5 h-5"></i>
+        </button>
       </div>
       
       <!-- 학기 정보 -->
-      <div class="px-6 py-4 bg-slate-950 text-slate-400 text-xs flex justify-between items-center">
+      <div id="sidebar-prof-profile" class="px-6 py-4 bg-slate-950 text-slate-400 text-xs flex justify-between items-center transition-all duration-300">
         <span>담당교수: 유태종 교수님</span>
         <span class="bg-blue-900/50 text-blue-400 px-2 py-0.5 rounded-full font-semibold">경영학부</span>
       </div>
@@ -58,32 +70,32 @@
       <!-- 내비게이션 링크 -->
       <nav class="mt-6 px-4 space-y-1">
         <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all bg-blue-600 text-white shadow-lg shadow-blue-900/20">
-          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-          <span>학습 대시보드</span>
+          <i data-lucide="layout-dashboard" class="w-4 h-4 shrink-0"></i>
+          <span class="sidebar-text whitespace-nowrap">학습 대시보드</span>
         </button>
         <button onclick="switchTab('concepts')" id="nav-concepts" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-800 hover:text-white">
-          <i data-lucide="book-open" class="w-4 h-4"></i>
-          <span>핵심 개념 정리</span>
+          <i data-lucide="book-open" class="w-4 h-4 shrink-0"></i>
+          <span class="sidebar-text whitespace-nowrap">핵심 개념 정리</span>
         </button>
         <button onclick="switchTab('exam')" id="nav-exam" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-800 hover:text-white">
-          <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-          <span>표준 모의고사</span>
+          <i data-lucide="file-spreadsheet" class="w-4 h-4 shrink-0"></i>
+          <span class="sidebar-text whitespace-nowrap">표준 모의고사</span>
         </button>
         <button onclick="switchTab('ai-generator')" id="nav-ai-generator" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-800 hover:text-white">
-          <i data-lucide="sparkles" class="w-4 h-4"></i>
-          <span>AI 시험문제 생성기</span>
+          <i data-lucide="sparkles" class="w-4 h-4 shrink-0"></i>
+          <span class="sidebar-text whitespace-nowrap">AI 시험문제 생성기</span>
         </button>
         <button onclick="switchTab('notes')" id="nav-notes" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-800 hover:text-white">
-          <i data-lucide="sticky-note" class="w-4 h-4"></i>
-          <span>오답 노트 관리</span>
+          <i data-lucide="sticky-note" class="w-4 h-4 shrink-0"></i>
+          <span class="sidebar-text whitespace-nowrap">오답 노트 관리</span>
         </button>
       </nav>
     </div>
 
     <!-- 푸터 프로필 -->
     <div class="p-4 border-t border-slate-800">
-      <div class="bg-slate-800/50 p-3 rounded-xl flex items-center space-x-3">
-        <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-white">
+      <div id="sidebar-user-profile" class="bg-slate-800/50 p-3 rounded-xl flex items-center space-x-3 transition-all duration-300">
+        <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-white shrink-0">
           <i data-lucide="user" class="w-4 h-4"></i>
         </div>
         <div class="overflow-hidden">
@@ -648,6 +660,7 @@
     let aiGenerationCount = parseInt(localStorage.getItem('OM_AI_GEN_COUNT')) || 0;
     let standardHighScore = parseInt(localStorage.getItem('OM_HIGH_SCORE')) || 0;
     let standardHighScoreDate = localStorage.getItem('OM_HIGH_SCORE_DATE') || '응시 기록 없음';
+    let isSidebarCollapsed = false;
 
     // ------------------ MOCK QUESTIONS (Standard Exam) ------------------
     const standardQuestions = [
@@ -796,7 +809,85 @@
       renderAnswerSheetGrid();
       // 초기 질문 렌더링
       renderStandardQuestion();
+      
+      // 사이드바 접기 상태 초기 로드
+      const savedCollapsed = localStorage.getItem('OM_SIDEBAR_COLLAPSED') === 'true';
+      if (savedCollapsed) {
+        // 이미 접힌 상태로 설정
+        isSidebarCollapsed = false; // toggleSidebar가 반전시키므로 false로 놓고 호출
+        toggleSidebar();
+      }
     };
+
+    // ------------------ SIDEBAR TOGGLE (FOLDING) ------------------
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar-panel');
+      const sidebarTexts = document.querySelectorAll('.sidebar-text');
+      const brandContainer = document.getElementById('sidebar-brand-container');
+      const collapsedToggle = document.getElementById('sidebar-toggle-collapsed');
+      const profProfile = document.getElementById('sidebar-prof-profile');
+      const userProfile = document.getElementById('sidebar-user-profile');
+      const navButtons = document.querySelectorAll('.nav-btn');
+
+      isSidebarCollapsed = !isSidebarCollapsed;
+      localStorage.setItem('OM_SIDEBAR_COLLAPSED', isSidebarCollapsed);
+
+      if (isSidebarCollapsed) {
+        // Collapse sidebar (Width: 20 -> 80px)
+        sidebar.classList.remove('w-80');
+        sidebar.classList.add('w-20');
+        
+        // Hide text labels
+        sidebarTexts.forEach(el => el.classList.add('hidden'));
+        profProfile.classList.add('hidden');
+        
+        // Adjust brand container layout
+        brandContainer.classList.add('justify-center');
+        brandContainer.querySelector('.flex').classList.remove('space-x-3');
+        brandContainer.querySelector('.sidebar-text').classList.add('hidden');
+        
+        // Adjust footer user profile
+        userProfile.classList.add('justify-center');
+        userProfile.querySelector('.overflow-hidden').classList.add('hidden');
+
+        // Center navigation icons
+        navButtons.forEach(btn => {
+          btn.classList.remove('space-x-3');
+          btn.classList.add('justify-center');
+        });
+
+        // Show collapsed toggle trigger
+        collapsedToggle.classList.remove('hidden');
+      } else {
+        // Expand sidebar (Width: w-80)
+        sidebar.classList.remove('w-20');
+        sidebar.classList.add('w-80');
+        
+        // Show text labels
+        sidebarTexts.forEach(el => el.classList.remove('hidden'));
+        profProfile.classList.remove('hidden');
+        
+        // Restore brand container layout
+        brandContainer.classList.remove('justify-center');
+        brandContainer.querySelector('.flex').classList.add('space-x-3');
+        brandContainer.querySelector('.sidebar-text').classList.remove('hidden');
+        
+        // Restore footer user profile
+        userProfile.classList.remove('justify-center');
+        userProfile.querySelector('.overflow-hidden').classList.remove('hidden');
+
+        // Restore navigation spacing
+        navButtons.forEach(btn => {
+          btn.classList.add('space-x-3');
+          btn.classList.remove('justify-center');
+        });
+
+        // Hide collapsed toggle trigger
+        collapsedToggle.classList.add('hidden');
+      }
+      // Re-create icons to ensure correct indicators
+      lucide.createIcons();
+    }
 
     // ------------------ SIDEBAR TAB NAVIGATION ------------------
     function switchTab(tabId) {
@@ -811,11 +902,19 @@
       const navButtons = document.querySelectorAll('.nav-btn');
       navButtons.forEach(btn => {
         btn.className = "nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-800 hover:text-white";
+        if (isSidebarCollapsed) {
+          btn.classList.remove('space-x-3');
+          btn.classList.add('justify-center');
+        }
       });
 
       const activeBtn = document.getElementById(`nav-${tabId}`);
       if (activeBtn) {
-        activeBtn.className = "nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all bg-blue-600 text-white shadow-lg shadow-blue-900/20";
+        if (isSidebarCollapsed) {
+          activeBtn.className = "nav-btn w-full flex items-center justify-center px-4 py-3 rounded-xl text-sm font-medium transition-all bg-blue-600 text-white shadow-lg shadow-blue-900/20";
+        } else {
+          activeBtn.className = "nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all bg-blue-600 text-white shadow-lg shadow-blue-900/20";
+        }
       }
 
       // 4. 헤더 제목 변경
@@ -1051,17 +1150,6 @@
       
       // 스크롤 아래로 내리기
       document.getElementById('exam-explanations-panel').scrollIntoView({ behavior: 'smooth' });
-    }
-
-    function resetStandardExam() {
-      userAnswers = Array(standardQuestions.length).fill(null);
-      currentQuizIndex = 0;
-      document.getElementById('exam-result-board').classList.add('hidden');
-      document.getElementById('exam-explanations-panel').classList.add('hidden');
-      document.getElementById('btn-submit-exam').classList.add('hidden');
-      renderStandardQuestion();
-      renderAnswerSheetGrid();
-      showToastBanner("모의고사가 리셋되었습니다. 신중히 정답을 마킹해 주세요.");
     }
 
     // ------------------ WRONG NOTES (오답 노트) ------------------
